@@ -1033,4 +1033,14 @@ NpmSpec::NpmSpec(std::string_view expression) {
     return Version::validate(version_string);
 }
 
+/*extern*/ bool attempt_parse(std::string_view version_string, Version &output) noexcept{
+    try{
+        output = Version(version_string);
+        return true;
+    }catch(...){
+        return false;
+    }
+}
+
+
 } // namespace semver

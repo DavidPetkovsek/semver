@@ -225,5 +225,6 @@ private:
 SEMVER_API extern std::weak_ordering compare(std::string_view v1, std::string_view v2);
 SEMVER_API extern bool match(std::string_view spec, std::string_view version);
 SEMVER_API extern bool validate(std::string_view version_string);
+SEMVER_API extern bool attempt_parse(std::string_view version_string, Version &output) noexcept;
 
 } // namespace semver

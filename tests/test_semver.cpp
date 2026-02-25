@@ -771,3 +771,18 @@ TEST_CASE("match: free function", "[match]") {
     REQUIRE(semver::match(">=0.1.1", "0.1.2"));
     REQUIRE_FALSE(semver::match(">0.1.1", "0.1.1"));
 }
+
+// ==========================================================================
+// attempt_parse() convenience
+// ==========================================================================
+
+TEST_CASE("attempt_parse: free function", "[attempt_parse]") {
+    semver::Version v;
+    bool success = semver::attempt_parse("1.0.1", v);
+    REQUIRE(v.to_string() == "1.0.1");
+    REQUIRE(success);
+
+    success = semver::attempt_parse("1.0.3.3", v);
+    REQUIRE(v.to_string() == "1.0.1");
+    REQUIRE(!success);
+}
