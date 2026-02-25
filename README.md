@@ -364,9 +364,9 @@ spec.match(semver::Version("3.0.1"));           // false
 ### Convenience free functions
 
 ```cpp
-semver::compare("1.2.0", "1.3.0");        // -1
-semver::compare("2.0.0", "1.0.0");        //  1
-semver::compare("1.0.0", "1.0.0");        //  0
+semver::compare("1.2.0", "1.3.0");        //  std::weak_ordering::less
+semver::compare("2.0.0", "1.0.0");        //  std::weak_ordering::greater
+semver::compare("1.0.0", "1.0.0");        //  std::weak_ordering::equivalent
 
 semver::match(">=1.0.0,<2.0.0", "1.5.0"); // true  (uses SimpleSpec)
 semver::validate("1.2.3");                 // true

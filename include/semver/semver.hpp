@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <ostream>
 
 #include "semver/detail.hpp"   // detail utilities, parsers, identifiers
 
