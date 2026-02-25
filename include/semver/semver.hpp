@@ -47,7 +47,7 @@ public:
 
     // --- String conversion ---
     [[nodiscard]] std::string to_string() const;
-    friend std::ostream& operator<<(std::ostream& os, const Version& v);
+    friend SEMVER_API std::ostream& operator<<(std::ostream& os, const Version& v);
 
     // --- Comparison ---
     [[nodiscard]] bool operator==(const Version& o) const;
@@ -93,9 +93,11 @@ private:
     void validate_kwargs() const;
 };
 
+SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::Version& v);
+
 } // namespace semver
 
-// std::hash specialisation
+// std::hash specialization
 template<>
 struct std::hash<semver::Version> {
     std::size_t operator()(const semver::Version& v) const noexcept { return v.hash(); }
@@ -192,12 +194,14 @@ public:
     bool operator==(const BaseSpec& o) const;
     [[nodiscard]] std::size_t hash() const;
     [[nodiscard]] const std::string& str() const;
-    friend std::ostream& operator<<(std::ostream& os, const BaseSpec& s);
+    friend SEMVER_API std::ostream& operator<<(std::ostream& os, const BaseSpec& s);
 
 protected:
     BaseSpec() = default;
     BaseSpec(std::string expr, ClausePtr c);
 };
+
+SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseSpec& s);
 
 class SEMVER_API SimpleSpec : public BaseSpec {
 public:
