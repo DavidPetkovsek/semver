@@ -20,6 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Catch2
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: catch2-${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.build_type }}-${{ hashFiles('tests/CMakeLists.txt') }}
+
       - name: Configure
         run: >
           cmake -B build
