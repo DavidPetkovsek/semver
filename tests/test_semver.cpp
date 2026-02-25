@@ -1,5 +1,6 @@
 // test_semver.cpp — Catch2 unit tests for semver.hpp
-// A faithful translation of the python-semanticversion test suite.
+// A faithful translation of the python-semanticversion test suite, with deprecated
+// partial-version functionality removed.
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
@@ -55,7 +56,7 @@ TEST_CASE("FormatTests: prerelease", "[spec][format]") {
     REQUIRE_INVALID_VERSION("1.2.3 -23");
 
     auto v = Version("1.2.3-23");
-    REQUIRE(v.prerelease().value() == Vs{"23"});
+    REQUIRE(v.prerelease() == Vs{"23"});
 
     // Identifiers MUST comprise only ASCII alphanumerics and hyphen.
     // Identifiers MUST NOT be empty.
@@ -68,12 +69,12 @@ TEST_CASE("FormatTests: prerelease", "[spec][format]") {
 
     // Mixed alpha-numeric with leading zero is allowed.
     auto v2 = Version("1.2.3-0a.0.000zz");
-    REQUIRE(v2.prerelease().value() == Vs{"0a", "0", "000zz"});
+    REQUIRE(v2.prerelease() == Vs{"0a", "0", "000zz"});
 }
 
 TEST_CASE("FormatTests: build", "[spec][format]") {
     auto v = Version("1.2.3");
-    REQUIRE(v.build().value() == Vs{});
+    REQUIRE(v.build() == Vs{});
 
     REQUIRE_INVALID_VERSION("1.2.3 +4");
 
@@ -84,7 +85,7 @@ TEST_CASE("FormatTests: build", "[spec][format]") {
 
     // Leading zeroes ARE allowed in build identifiers.
     auto v2 = Version("1.2.3+0.0a.01");
-    REQUIRE(v2.build().value() == Vs{"0", "0a", "01"});
+    REQUIRE(v2.build() == Vs{"0", "0a", "01"});
 }
 
 TEST_CASE("FormatTests: precedence", "[spec][format]") {
@@ -200,8 +201,8 @@ TEST_CASE("Version: parsing known versions", "[base][parsing]") {
         REQUIRE(v.major() == mj);
         REQUIRE(v.minor() == mn);
         REQUIRE(v.patch() == pa);
-        REQUIRE(v.prerelease().value() == pre);
-        REQUIRE(v.build().value() == bld);
+        REQUIRE(v.prerelease() == pre);
+        REQUIRE(v.build() == bld);
     }
 }
 
@@ -245,7 +246,7 @@ TEST_CASE("Version: next_major/minor/patch with build metadata", "[base][bump]")
         auto v = Version("1.0.0+build");
         auto nm = v.next_major();
         REQUIRE(nm.major() == 2); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
-        REQUIRE(nm.prerelease().value().empty()); // no build on next_*
+        REQUIRE(nm.prerelease().empty()); // no build on next_*
 
         auto nmi = v.next_minor();
         REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 1); REQUIRE(nmi.patch() == 0);
@@ -278,7 +279,7 @@ TEST_CASE("Version: next_major/minor/patch with prerelease", "[base][bump_pre]")
         auto v = Version("1.0.0-pre+build");
         auto nm = v.next_major();
         REQUIRE(nm.major() == 1); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
-        REQUIRE(nm.prerelease().value().empty());
+        REQUIRE(nm.prerelease().empty());
 
         auto nmi = v.next_minor();
         REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 0); REQUIRE(nmi.patch() == 0);
@@ -734,36 +735,14 @@ TEST_CASE("Version: truncate reference", "[base][truncate_ref]") {
 }
 
 // ==========================================================================
-// Partial version parsing (basic coverage)
+// Incomplete/partial version strings are invalid
 // ==========================================================================
 
-TEST_CASE("Version: partial parsing", "[base][partial]") {
-    auto v1 = Version("1", true);
-    REQUIRE(v1.major() == 1);
-    REQUIRE_FALSE(v1.minor().has_value());
-    REQUIRE_FALSE(v1.patch().has_value());
-
-    auto v2 = Version("1.2", true);
-    REQUIRE(v2.major() == 1);
-    REQUIRE(v2.minor() == 2);
-    REQUIRE_FALSE(v2.patch().has_value());
-
-    auto v3 = Version("1.2.3", true);
-    REQUIRE(v3.major() == 1);
-    REQUIRE(v3.minor() == 2);
-    REQUIRE(v3.patch() == 3);
-
-    // Partial with prerelease.
-    auto v4 = Version("1.2.3-alpha", true);
-    REQUIRE(v4.prerelease().value() == Vs{"alpha"});
-}
-
-TEST_CASE("Version: partial str round-trip", "[base][partial_str]") {
-    std::vector<std::string> partials = {"1", "1.2", "1.2.3", "1.2.3-alpha"};
-    for (auto& text : partials) {
-        INFO("partial: " << text);
-        REQUIRE(Version(text, true).to_string() == text);
-    }
+TEST_CASE("Version: incomplete/partial strings are invalid", "[base][partial]") {
+    REQUIRE_INVALID_VERSION("1");
+    REQUIRE_INVALID_VERSION("1.2");
+    REQUIRE_INVALID_VERSION("0");
+    REQUIRE_INVALID_VERSION("0.1");
 }
 
 // ==========================================================================

@@ -1,5 +1,5 @@
 // semver.hpp — C++20 Semantic Versioning Library
-// A faithful translation of the python-semanticversion library.
+// A faithful translation of the python-semanticversion, with deprecated features removed.
 // Copyright (c) 2025. BSD-2-Clause.
 
 #pragma once
@@ -10,9 +10,7 @@
 #include <string_view>
 #include <ostream>
 
-#include "semver/detail.hpp"   // detail utilities, parsers, identifiers
-
-// NOTE: SEMVER_API is already defined by detail.hpp — no need to redefine.
+#include "semver/detail.hpp"
 
 namespace semver {
 
@@ -33,21 +31,19 @@ class SEMVER_API Version {
 public:
     // --- Constructors ---
     Version();
-    explicit Version(std::string_view version_string, bool partial = false);
+    explicit Version(std::string_view version_string);
     Version(int major,
-            std::optional<int> minor = std::nullopt,
-            std::optional<int> patch = std::nullopt,
-            std::optional<std::vector<std::string>> prerelease = std::vector<std::string>{},
-            std::optional<std::vector<std::string>> build = std::nullopt,
-            bool partial = false);
+            int minor = 0,
+            int patch = 0,
+            std::vector<std::string> prerelease = {},
+            std::vector<std::string> build = {});
 
     // --- Accessors ---
     [[nodiscard]] int major() const;
-    [[nodiscard]] const std::optional<int>& minor() const;
-    [[nodiscard]] const std::optional<int>& patch() const;
-    [[nodiscard]] const std::optional<std::vector<std::string>>& prerelease() const;
-    [[nodiscard]] const std::optional<std::vector<std::string>>& build() const;
-    [[nodiscard]] bool partial() const;
+    [[nodiscard]] int minor() const;
+    [[nodiscard]] int patch() const;
+    [[nodiscard]] const std::vector<std::string>& prerelease() const;
+    [[nodiscard]] const std::vector<std::string>& build() const;
 
     // --- String conversion ---
     [[nodiscard]] std::string to_string() const;
@@ -70,25 +66,22 @@ public:
     [[nodiscard]] Version truncate(std::string_view level = "patch") const;
 
     // --- Coerce ---
-    [[nodiscard]] static Version coerce(std::string_view version_string, bool partial = false);
+    [[nodiscard]] static Version coerce(std::string_view version_string);
 
     // --- Parse ---
-    [[nodiscard]] static std::tuple<int,
-                                    std::optional<int>,
-                                    std::optional<int>,
-                                    std::optional<std::vector<std::string>>,
-                                    std::optional<std::vector<std::string>>>
-    parse(std::string_view version_string, bool partial = false);
+    [[nodiscard]] static std::tuple<int, int, int,
+                                    std::vector<std::string>,
+                                    std::vector<std::string>>
+    parse(std::string_view version_string);
 
     [[nodiscard]] static bool validate(std::string_view version_string);
 
 private:
     int major_{};
-    std::optional<int> minor_{};
-    std::optional<int> patch_{};
-    std::optional<std::vector<std::string>> prerelease_{};
-    std::optional<std::vector<std::string>> build_{};
-    bool partial_{false};
+    int minor_{};
+    int patch_{};
+    std::vector<std::string> prerelease_{};
+    std::vector<std::string> build_{};
 
     std::tuple<int, int, int, std::vector<detail::Identifier>> cmp_key_;
     std::tuple<int, int, int, std::vector<detail::Identifier>, std::vector<detail::Identifier>> sort_key_;

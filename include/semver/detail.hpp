@@ -56,7 +56,7 @@ struct VersionParts {
     std::string_view prerelease_s, build_s;
 };
 
-SEMVER_API extern VersionParts parse_version_parts(std::string_view s, bool partial = false);
+SEMVER_API extern VersionParts parse_version_parts(std::string_view s);
 
 // ---------------------------------------------------------------------------
 // Spec-expression parser parts

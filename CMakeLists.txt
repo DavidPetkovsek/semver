@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.21)
 project(semver
     VERSION   0.1.0
     LANGUAGES CXX
-    DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion"
+    DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
 
 set(CMAKE_CXX_STANDARD 20)

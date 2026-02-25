@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
 
-A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion).
+A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion), with deprecated features removed.
 
 Parse, compare, and match versions against flexible range specifications following the [SemVer 2.0.0](https://semver.org/) standard. Includes both a simple/intuitive spec syntax and full [NPM-style range](https://github.com/npm/node-semver#ranges) support.
 
@@ -12,7 +12,6 @@ Parse, compare, and match versions against flexible range specifications followi
 - **Version comparison** with correct precedence rules
 - **SimpleSpec** — comma-separated clauses with wildcards, caret, tilde, and compatible-release operators
 - **NpmSpec** — the complete NPM range specification including hyphen ranges, X-ranges, and `||` unions
-- **Partial versions** — parse incomplete version strings like `1` or `1.2`
 - **Coercion** — best-effort conversion of arbitrary strings into valid versions
 - **Static or shared library** — configurable at build time via CMake
 
@@ -58,15 +57,15 @@ Construct a `Version` from a string:
 ```cpp
 auto v = semver::Version("1.4.2-rc.1+build.47");
 
-std::cout << v.major();                  // 1
-std::cout << v.minor().value();          // 4
-std::cout << v.patch().value();          // 2
-std::cout << (*v.prerelease())[0];       // "rc"
-std::cout << (*v.prerelease())[1];       // "1"
-std::cout << (*v.build())[0];            // "build"
-std::cout << (*v.build())[1];            // "47"
-std::cout << v.to_string();              // "1.4.2-rc.1+build.47"
-std::cout << v;                          // "1.4.2-rc.1+build.47"
+std::cout << v.major();           // 1
+std::cout << v.minor();           // 4
+std::cout << v.patch();           // 2
+std::cout << v.prerelease()[0];   // "rc"
+std::cout << v.prerelease()[1];   // "1"
+std::cout << v.build()[0];        // "build"
+std::cout << v.build()[1];        // "47"
+std::cout << v.to_string();       // "1.4.2-rc.1+build.47"
+std::cout << v;                   // "1.4.2-rc.1+build.47"
 ```
 
 Validate without throwing:
@@ -76,12 +75,6 @@ semver::Version::validate("1.2.3");    // true
 semver::Version::validate("not.a.v");  // false
 ```
 
-### Partial versions
-
-```cpp
-auto p = semver::Version("1.2", /*partial=*/true);
-// p.patch is std::nullopt
-```
 
 ### Coercion
 

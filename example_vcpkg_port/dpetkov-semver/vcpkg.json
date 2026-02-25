@@ -1,7 +1,7 @@
 {
   "name": "dpetkov-semver",
   "version": "1.0.0",
-  "description": "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion",
+  "description": "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed.",
   "homepage": "https://github.com/DavidPetkovsek/semver",
   "license": "BSD-2-Clause",
   "supports": "!uwp",
