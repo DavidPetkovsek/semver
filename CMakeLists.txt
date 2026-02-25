@@ -30,6 +30,10 @@ option(SEMVER_BUILD_TESTS    "Build the Catch2 test suite" OFF)
 # so the regex statics / any future .cpp TUs are compiled once.
 if(SEMVER_BUILD_SHARED)
     add_library(semver SHARED src/semver.cpp)
+    target_compile_definitions(semver
+        PUBLIC  SEMVER_SHARED
+        PRIVATE SEMVER_EXPORTS
+    )
 else()
     add_library(semver STATIC src/semver.cpp)
 endif()
@@ -44,9 +48,11 @@ target_include_directories(semver
 target_compile_features(semver PUBLIC cxx_std_20)
 
 set_target_properties(semver PROPERTIES
-    VERSION       ${PROJECT_VERSION}
-    SOVERSION     ${PROJECT_VERSION_MAJOR}
-    POSITION_INDEPENDENT_CODE ON
+    VERSION                    ${PROJECT_VERSION}
+    SOVERSION                  ${PROJECT_VERSION_MAJOR}
+    POSITION_INDEPENDENT_CODE  ON
+    CXX_VISIBILITY_PRESET      hidden
+    VISIBILITY_INLINES_HIDDEN  ON
 )
 
 # On Windows, export all symbols for shared builds.
