@@ -97,7 +97,7 @@ SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::Versi
 
 } // namespace semver
 
-// std::hash specialisation
+// std::hash specialization
 template<>
 struct std::hash<semver::Version> {
     std::size_t operator()(const semver::Version& v) const noexcept { return v.hash(); }
