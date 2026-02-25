@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: "${{ matrix.os }} / ${{ matrix.build_type }} / ${{ matrix.shared && 'shared' || 'static' }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release]
+        shared: [ON, OFF]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DSEMVER_BUILD_TESTS=ON
+          -DSEMVER_BUILD_SHARED=${{ matrix.shared }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }}
+
+      - name: Test (Unix)
+        if: runner.os != 'Windows'
+        run: ./build/tests/semver_tests --colour-mode ansi
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        run: ./build/tests/${{ matrix.build_type }}/semver_tests.exe --colour-mode ansi
