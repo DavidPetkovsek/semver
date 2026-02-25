@@ -1,5 +1,6 @@
 # semver
 
+[![Github releases](https://img.shields.io/github/release/DavidPetkovsek/semver.svg)](https://github.com/DavidPetkovsek/semver/releases)
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
 
 A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion), with deprecated features removed.
@@ -365,6 +366,11 @@ semver::compare("1.0.0", "1.0.0");        //  std::weak_ordering::equivalent
 semver::match(">=1.0.0,<2.0.0", "1.5.0");  // true  (uses SimpleSpec)
 semver::validate("1.2.3");                 // true
 semver::validate("nope");                  // false
+
+semver::Version v;
+if(!semver::attempt_parse("1.2.3", v))
+    throw std::runtime_error("bad version");  // does not throw because parsing succeeded
+std::cout << v;                               // 1.2.3
 ```
 
 ## License
