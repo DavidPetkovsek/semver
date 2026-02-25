@@ -47,7 +47,7 @@ public:
 
     // --- String conversion ---
     [[nodiscard]] std::string to_string() const;
-    friend std::ostream& operator<<(std::ostream& os, const Version& v);
+    friend SEMVER_API std::ostream& operator<<(std::ostream& os, const Version& v);
 
     // --- Comparison ---
     [[nodiscard]] bool operator==(const Version& o) const;
@@ -194,7 +194,7 @@ public:
     bool operator==(const BaseSpec& o) const;
     [[nodiscard]] std::size_t hash() const;
     [[nodiscard]] const std::string& str() const;
-    friend std::ostream& operator<<(std::ostream& os, const BaseSpec& s);
+    friend SEMVER_API std::ostream& operator<<(std::ostream& os, const BaseSpec& s);
 
 protected:
     BaseSpec() = default;
