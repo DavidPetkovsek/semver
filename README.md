@@ -19,14 +19,14 @@ Parse, compare, and match versions against flexible range specifications followi
 Build as a shared library:
 
 ```bash
-cmake -B build
+cmake -B build -DSEMVER_BUILD_TESTS=OFF
 cmake --build build
 ```
 
 Build as a static library:
 
 ```bash
-cmake -B build -DSEMVER_BUILD_SHARED=OFF
+cmake -B build -DSEMVER_BUILD_TESTS=OFF -DSEMVER_BUILD_SHARED=OFF
 cmake --build build
 ```
 
