@@ -93,6 +93,8 @@ private:
     void validate_kwargs() const;
 };
 
+SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::Version& v);
+
 } // namespace semver
 
 // std::hash specialisation
@@ -198,6 +200,8 @@ protected:
     BaseSpec() = default;
     BaseSpec(std::string expr, ClausePtr c);
 };
+
+SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseSpec& s);
 
 class SEMVER_API SimpleSpec : public BaseSpec {
 public:

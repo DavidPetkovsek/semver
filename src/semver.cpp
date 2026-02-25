@@ -288,7 +288,7 @@ std::string Version::to_string() const {
     return v;
 }
 
-/*extern*/ std::ostream& operator<<(std::ostream& os, const Version& v) {
+/*extern*/ std::ostream& operator<<(std::ostream& os, const semver::Version& v) {
     return os << v.to_string();
 }
 
@@ -713,7 +713,7 @@ bool BaseSpec::contains(const Version& v) const { return match(v); }
 bool BaseSpec::operator==(const BaseSpec& o) const { return *clause == *o.clause; }
 std::size_t BaseSpec::hash() const { return clause->hash_value(); }
 const std::string& BaseSpec::str() const { return expression; }
-std::ostream& operator<<(std::ostream& os, const BaseSpec& s) { return os << s.expression; }
+std::ostream& operator<<(std::ostream& os, const semver::BaseSpec& s) { return os << s.expression; }
 
 // ============================================================================
 // SimpleSpec implementation
