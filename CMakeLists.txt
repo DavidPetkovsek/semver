@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # --------------------------------------------------------------------------
 
 project(semver
-    VERSION   0.1.0
+    VERSION   0.1.1
     LANGUAGES CXX
     DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
@@ -65,53 +65,51 @@ endif()
 # --------------------------------------------------------------------------
 # Install / Export
 # --------------------------------------------------------------------------
-if(SEMVER_INSTALL)
-    include(GNUInstallDirs)
-    include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-    # Install the header.
-    install(
-        FILES
-            include/semver/semver.hpp
-            include/semver/detail.hpp
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
-    )
+# Install the header.
+install(
+    FILES
+        include/semver/semver.hpp
+        include/semver/detail.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
+)
 
-    # Install the target.
-    install(
-        TARGETS semver
-        EXPORT  semverTargets
-        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+# Install the target.
+install(
+    TARGETS semver
+    EXPORT  semverTargets
+    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-    # Export target file.
-    install(
-        EXPORT      semverTargets
-        FILE        semverTargets.cmake
-        NAMESPACE   semver::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
-    )
+# Export target file.
+install(
+    EXPORT      semverTargets
+    FILE        semverTargets.cmake
+    NAMESPACE   semver::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+)
 
-    # Package config.
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/semverConfig.cmake.in"
+# Package config.
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/semverConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
+    VERSION       ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES
         "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
-    )
-
-    write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
-        VERSION       ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion
-    )
-
-    install(
-        FILES
-            "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
-            "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
-    )
-endif()
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+)
