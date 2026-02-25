@@ -58,14 +58,15 @@ Construct a `Version` from a string:
 ```cpp
 auto v = semver::Version("1.4.2-rc.1+build.47");
 
-std::cout << v.major;                  // 1
-std::cout << v.minor.value();          // 4
-std::cout << v.patch.value();          // 2
-std::cout << (*v.prerelease)[0];       // "rc"
-std::cout << (*v.prerelease)[1];       // "1"
-std::cout << (*v.build)[0];            // "build"
-std::cout << (*v.build)[1];            // "47"
-std::cout << v.to_string();            // "1.4.2-rc.1+build.47"
+std::cout << v.major();                  // 1
+std::cout << v.minor().value();          // 4
+std::cout << v.patch().value();          // 2
+std::cout << (*v.prerelease())[0];       // "rc"
+std::cout << (*v.prerelease())[1];       // "1"
+std::cout << (*v.build())[0];            // "build"
+std::cout << (*v.build())[1];            // "47"
+std::cout << v.to_string();              // "1.4.2-rc.1+build.47"
+std::cout << v;                          // "1.4.2-rc.1+build.47"
 ```
 
 Validate without throwing:
@@ -343,7 +344,7 @@ In NPM semantics, prereleases only satisfy a range if the comparator's version h
 ```cpp
 auto spec = semver::NpmSpec(">1.2.3-alpha.3");
 spec.match(semver::Version("1.2.3-alpha.7"));   // true  — same patch, higher prerelease
-spec.match(semver::Version("3.4.5"));            // true  — release is above the range
+spec.match(semver::Version("3.4.5"));           // true  — release is above the range
 spec.match(semver::Version("3.4.5-alpha.9"));   // false — different patch, prerelease blocked
 ```
 
@@ -368,7 +369,7 @@ semver::compare("1.2.0", "1.3.0");        //  std::weak_ordering::less
 semver::compare("2.0.0", "1.0.0");        //  std::weak_ordering::greater
 semver::compare("1.0.0", "1.0.0");        //  std::weak_ordering::equivalent
 
-semver::match(">=1.0.0,<2.0.0", "1.5.0"); // true  (uses SimpleSpec)
+semver::match(">=1.0.0,<2.0.0", "1.5.0");  // true  (uses SimpleSpec)
 semver::validate("1.2.3");                 // true
 semver::validate("nope");                  // false
 ```

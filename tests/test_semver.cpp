@@ -35,9 +35,9 @@ TEST_CASE("FormatTests: major_minor_patch", "[spec][format]") {
     REQUIRE_INVALID_VERSION("1.-2.3");
 
     auto v = Version("1.2.3");
-    REQUIRE(v.major == 1);
-    REQUIRE(v.minor == 2);
-    REQUIRE(v.patch == 3);
+    REQUIRE(v.major() == 1);
+    REQUIRE(v.minor() == 2);
+    REQUIRE(v.patch() == 3);
 
     // MUST NOT contain leading zeroes
     REQUIRE_INVALID_VERSION("1.2.01");
@@ -45,9 +45,9 @@ TEST_CASE("FormatTests: major_minor_patch", "[spec][format]") {
     REQUIRE_INVALID_VERSION("01.2.1");
 
     auto v0 = Version("0.0.0");
-    REQUIRE(v0.major == 0);
-    REQUIRE(v0.minor == 0);
-    REQUIRE(v0.patch == 0);
+    REQUIRE(v0.major() == 0);
+    REQUIRE(v0.minor() == 0);
+    REQUIRE(v0.patch() == 0);
 }
 
 TEST_CASE("FormatTests: prerelease", "[spec][format]") {
@@ -55,7 +55,7 @@ TEST_CASE("FormatTests: prerelease", "[spec][format]") {
     REQUIRE_INVALID_VERSION("1.2.3 -23");
 
     auto v = Version("1.2.3-23");
-    REQUIRE(v.prerelease.value() == Vs{"23"});
+    REQUIRE(v.prerelease().value() == Vs{"23"});
 
     // Identifiers MUST comprise only ASCII alphanumerics and hyphen.
     // Identifiers MUST NOT be empty.
@@ -68,12 +68,12 @@ TEST_CASE("FormatTests: prerelease", "[spec][format]") {
 
     // Mixed alpha-numeric with leading zero is allowed.
     auto v2 = Version("1.2.3-0a.0.000zz");
-    REQUIRE(v2.prerelease.value() == Vs{"0a", "0", "000zz"});
+    REQUIRE(v2.prerelease().value() == Vs{"0a", "0", "000zz"});
 }
 
 TEST_CASE("FormatTests: build", "[spec][format]") {
     auto v = Version("1.2.3");
-    REQUIRE(v.build.value() == Vs{});
+    REQUIRE(v.build().value() == Vs{});
 
     REQUIRE_INVALID_VERSION("1.2.3 +4");
 
@@ -84,7 +84,7 @@ TEST_CASE("FormatTests: build", "[spec][format]") {
 
     // Leading zeroes ARE allowed in build identifiers.
     auto v2 = Version("1.2.3+0.0a.01");
-    REQUIRE(v2.build.value() == Vs{"0", "0a", "01"});
+    REQUIRE(v2.build().value() == Vs{"0", "0a", "01"});
 }
 
 TEST_CASE("FormatTests: precedence", "[spec][format]") {
@@ -197,11 +197,11 @@ TEST_CASE("Version: parsing known versions", "[base][parsing]") {
     for (auto& [text, mj, mn, pa, pre, bld] : cases) {
         INFO("version: " << text);
         auto v = Version(text);
-        REQUIRE(v.major == mj);
-        REQUIRE(v.minor == mn);
-        REQUIRE(v.patch == pa);
-        REQUIRE(v.prerelease.value() == pre);
-        REQUIRE(v.build.value() == bld);
+        REQUIRE(v.major() == mj);
+        REQUIRE(v.minor() == mn);
+        REQUIRE(v.patch() == pa);
+        REQUIRE(v.prerelease().value() == pre);
+        REQUIRE(v.build().value() == bld);
     }
 }
 
@@ -244,14 +244,14 @@ TEST_CASE("Version: next_major/minor/patch with build metadata", "[base][bump]")
     SECTION("1.0.0+build") {
         auto v = Version("1.0.0+build");
         auto nm = v.next_major();
-        REQUIRE(nm.major == 2); REQUIRE(nm.minor == 0); REQUIRE(nm.patch == 0);
-        REQUIRE(nm.prerelease.value().empty()); // no build on next_*
+        REQUIRE(nm.major() == 2); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
+        REQUIRE(nm.prerelease().value().empty()); // no build on next_*
 
         auto nmi = v.next_minor();
-        REQUIRE(nmi.major == 1); REQUIRE(nmi.minor == 1); REQUIRE(nmi.patch == 0);
+        REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 1); REQUIRE(nmi.patch() == 0);
 
         auto np = v.next_patch();
-        REQUIRE(np.major == 1); REQUIRE(np.minor == 0); REQUIRE(np.patch == 1);
+        REQUIRE(np.major() == 1); REQUIRE(np.minor() == 0); REQUIRE(np.patch() == 1);
     }
 
     SECTION("1.1.0+build") {
@@ -277,38 +277,38 @@ TEST_CASE("Version: next_major/minor/patch with prerelease", "[base][bump_pre]")
     SECTION("1.0.0-pre+build") {
         auto v = Version("1.0.0-pre+build");
         auto nm = v.next_major();
-        REQUIRE(nm.major == 1); REQUIRE(nm.minor == 0); REQUIRE(nm.patch == 0);
-        REQUIRE(nm.prerelease.value().empty());
+        REQUIRE(nm.major() == 1); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
+        REQUIRE(nm.prerelease().value().empty());
 
         auto nmi = v.next_minor();
-        REQUIRE(nmi.major == 1); REQUIRE(nmi.minor == 0); REQUIRE(nmi.patch == 0);
+        REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 0); REQUIRE(nmi.patch() == 0);
 
         auto np = v.next_patch();
-        REQUIRE(np.major == 1); REQUIRE(np.minor == 0); REQUIRE(np.patch == 0);
+        REQUIRE(np.major() == 1); REQUIRE(np.minor() == 0); REQUIRE(np.patch() == 0);
     }
 
     SECTION("1.1.0-pre+build") {
         auto v = Version("1.1.0-pre+build");
         auto nm = v.next_major();
-        REQUIRE(nm.major == 2); REQUIRE(nm.minor == 0); REQUIRE(nm.patch == 0);
+        REQUIRE(nm.major() == 2); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
 
         auto nmi = v.next_minor();
-        REQUIRE(nmi.major == 1); REQUIRE(nmi.minor == 1); REQUIRE(nmi.patch == 0);
+        REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 1); REQUIRE(nmi.patch() == 0);
 
         auto np = v.next_patch();
-        REQUIRE(np.major == 1); REQUIRE(np.minor == 1); REQUIRE(np.patch == 0);
+        REQUIRE(np.major() == 1); REQUIRE(np.minor() == 1); REQUIRE(np.patch() == 0);
     }
 
     SECTION("1.0.1-pre+build") {
         auto v = Version("1.0.1-pre+build");
         auto nm = v.next_major();
-        REQUIRE(nm.major == 2); REQUIRE(nm.minor == 0); REQUIRE(nm.patch == 0);
+        REQUIRE(nm.major() == 2); REQUIRE(nm.minor() == 0); REQUIRE(nm.patch() == 0);
 
         auto nmi = v.next_minor();
-        REQUIRE(nmi.major == 1); REQUIRE(nmi.minor == 1); REQUIRE(nmi.patch == 0);
+        REQUIRE(nmi.major() == 1); REQUIRE(nmi.minor() == 1); REQUIRE(nmi.patch() == 0);
 
         auto np = v.next_patch();
-        REQUIRE(np.major == 1); REQUIRE(np.minor == 0); REQUIRE(np.patch == 1);
+        REQUIRE(np.major() == 1); REQUIRE(np.minor() == 0); REQUIRE(np.patch() == 1);
     }
 }
 
@@ -739,23 +739,23 @@ TEST_CASE("Version: truncate reference", "[base][truncate_ref]") {
 
 TEST_CASE("Version: partial parsing", "[base][partial]") {
     auto v1 = Version("1", true);
-    REQUIRE(v1.major == 1);
-    REQUIRE_FALSE(v1.minor.has_value());
-    REQUIRE_FALSE(v1.patch.has_value());
+    REQUIRE(v1.major() == 1);
+    REQUIRE_FALSE(v1.minor().has_value());
+    REQUIRE_FALSE(v1.patch().has_value());
 
     auto v2 = Version("1.2", true);
-    REQUIRE(v2.major == 1);
-    REQUIRE(v2.minor == 2);
-    REQUIRE_FALSE(v2.patch.has_value());
+    REQUIRE(v2.major() == 1);
+    REQUIRE(v2.minor() == 2);
+    REQUIRE_FALSE(v2.patch().has_value());
 
     auto v3 = Version("1.2.3", true);
-    REQUIRE(v3.major == 1);
-    REQUIRE(v3.minor == 2);
-    REQUIRE(v3.patch == 3);
+    REQUIRE(v3.major() == 1);
+    REQUIRE(v3.minor() == 2);
+    REQUIRE(v3.patch() == 3);
 
     // Partial with prerelease.
     auto v4 = Version("1.2.3-alpha", true);
-    REQUIRE(v4.prerelease.value() == Vs{"alpha"});
+    REQUIRE(v4.prerelease().value() == Vs{"alpha"});
 }
 
 TEST_CASE("Version: partial str round-trip", "[base][partial_str]") {

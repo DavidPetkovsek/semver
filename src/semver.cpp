@@ -15,21 +15,21 @@ namespace semver {
 // ============================================================================
 namespace detail {
 
-bool is_digit(char c) { return c >= '0' && c <= '9'; }
+/*extern*/ bool is_digit(char c) { return c >= '0' && c <= '9'; }
 
-bool is_alnum_or_hyphen(char c) {
+/*extern*/ bool is_alnum_or_hyphen(char c) {
     return is_digit(c) || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-';
 }
 
-bool is_digit_string(std::string_view s) {
+/*extern*/ bool is_digit_string(std::string_view s) {
     return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) { return is_digit(c); });
 }
 
-bool has_leading_zero(std::string_view v) {
+/*extern*/ bool has_leading_zero(std::string_view v) {
     return v.size() > 1 && v[0] == '0' && is_digit_string(v);
 }
 
-std::vector<std::string> split(std::string_view s, char delim) {
+/*extern*/ std::vector<std::string> split(std::string_view s, char delim) {
     std::vector<std::string> parts;
     std::string current;
     for (char c : s) {
@@ -44,7 +44,7 @@ std::vector<std::string> split(std::string_view s, char delim) {
     return parts;
 }
 
-std::string join(const std::vector<std::string>& v, std::string_view sep) {
+/*extern*/ std::string join(const std::vector<std::string>& v, std::string_view sep) {
     if (v.empty()) return {};
     std::string r = v[0];
     for (std::size_t i = 1; i < v.size(); ++i) {
@@ -54,7 +54,7 @@ std::string join(const std::vector<std::string>& v, std::string_view sep) {
     return r;
 }
 
-int parse_int(std::string_view s) {
+/*extern*/ int parse_int(std::string_view s) {
     int val = 0;
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
     if (ec != std::errc{} || ptr != s.data() + s.size())
@@ -62,26 +62,26 @@ int parse_int(std::string_view s) {
     return val;
 }
 
-std::string lstrip_zeros(std::string_view s) {
+/*extern*/ std::string lstrip_zeros(std::string_view s) {
     if (s.empty()) return "0";
     auto pos = s.find_first_not_of('0');
     if (pos == std::string_view::npos) return "0";
     return std::string(s.substr(pos));
 }
 
-std::string_view trim(std::string_view s) {
+/*extern*/ std::string_view trim(std::string_view s) {
     while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) s.remove_prefix(1);
     while (!s.empty() && (s.back() == ' ' || s.back() == '\t')) s.remove_suffix(1);
     return s;
 }
 
-std::string_view consume_digits(std::string_view s, std::size_t& pos) {
+/*extern*/ std::string_view consume_digits(std::string_view s, std::size_t& pos) {
     auto start = pos;
     while (pos < s.size() && is_digit(s[pos])) ++pos;
     return s.substr(start, pos - start);
 }
 
-std::string_view consume_identifiers(std::string_view s, std::size_t& pos) {
+/*extern*/ std::string_view consume_identifiers(std::string_view s, std::size_t& pos) {
     auto start = pos;
     while (pos < s.size() && (is_alnum_or_hyphen(s[pos]) || s[pos] == '.')) ++pos;
     return s.substr(start, pos - start);
@@ -90,7 +90,7 @@ std::string_view consume_identifiers(std::string_view s, std::size_t& pos) {
 // ---------------------------------------------------------------------------
 // Version-string parser
 // ---------------------------------------------------------------------------
-VersionParts parse_version_parts(std::string_view s, bool partial) {
+/*extern*/ VersionParts parse_version_parts(std::string_view s, bool partial) {
     VersionParts p;
     std::size_t pos = 0;
 
@@ -153,7 +153,7 @@ VersionParts parse_version_parts(std::string_view s, bool partial) {
 // ---------------------------------------------------------------------------
 // Spec-expression parser
 // ---------------------------------------------------------------------------
-std::string_view consume_prefix(std::string_view s, std::size_t& pos) {
+/*extern*/ std::string_view consume_prefix(std::string_view s, std::size_t& pos) {
     if (pos >= s.size()) return {};
     if (pos + 1 < s.size()) {
         auto two = s.substr(pos, 2);
@@ -170,11 +170,11 @@ std::string_view consume_prefix(std::string_view s, std::size_t& pos) {
     return {};
 }
 
-bool is_wildcard(std::string_view s) {
+/*extern*/ bool is_wildcard(std::string_view s) {
     return s == "*" || s == "x" || s == "X";
 }
 
-std::string_view consume_number_or_wildcard(std::string_view s, std::size_t& pos) {
+/*extern*/ std::string_view consume_number_or_wildcard(std::string_view s, std::size_t& pos) {
     if (pos >= s.size()) return {};
     if (s[pos] == '*' || s[pos] == 'x' || s[pos] == 'X') {
         ++pos;
@@ -183,7 +183,7 @@ std::string_view consume_number_or_wildcard(std::string_view s, std::size_t& pos
     return consume_digits(s, pos);
 }
 
-SpecParts parse_spec_block(std::string_view s, bool allow_v_prefix) {
+/*extern*/ SpecParts parse_spec_block(std::string_view s, bool allow_v_prefix) {
     SpecParts p;
     std::size_t pos = 0;
 
@@ -227,14 +227,14 @@ SpecParts parse_spec_block(std::string_view s, bool allow_v_prefix) {
 // ---------------------------------------------------------------------------
 // Identifier comparison
 // ---------------------------------------------------------------------------
-bool operator==(const Identifier& a, const Identifier& b) {
+/*extern*/ bool operator==(const Identifier& a, const Identifier& b) {
     return a.index() == b.index() && std::visit([&](const auto& va) -> bool {
         using T = std::decay_t<decltype(va)>;
         return va == std::get<T>(b);
     }, a);
 }
 
-std::strong_ordering operator<=>(const Identifier& a, const Identifier& b) {
+/*extern*/ std::strong_ordering operator<=>(const Identifier& a, const Identifier& b) {
     if (a.index() != b.index()) return a.index() <=> b.index();
     return std::visit([&](const auto& va) -> std::strong_ordering {
         using T = std::decay_t<decltype(va)>;
@@ -242,7 +242,7 @@ std::strong_ordering operator<=>(const Identifier& a, const Identifier& b) {
     }, a);
 }
 
-Identifier make_identifier(std::string_view part) {
+/*extern*/ Identifier make_identifier(std::string_view part) {
     if (is_digit_string(part))
         return NumericIdentifier{parse_int(part)};
     return AlphaIdentifier{std::string(part)};
@@ -258,12 +258,12 @@ Version::Version() = default;
 
 Version::Version(std::string_view version_string, bool partial) {
     auto [mj, mn, pa, pr, bd] = parse(version_string, partial);
-    this->major = mj;
-    this->minor = mn;
-    this->patch = pa;
-    this->prerelease = std::move(pr);
-    this->build = std::move(bd);
-    this->partial = partial;
+    this->major_ = mj;
+    this->minor_ = mn;
+    this->patch_ = pa;
+    this->prerelease_ = std::move(pr);
+    this->build_ = std::move(bd);
+    this->partial_ = partial;
     rebuild_keys();
 }
 
@@ -273,47 +273,54 @@ Version::Version(int major,
                  std::optional<std::vector<std::string>> prerelease,
                  std::optional<std::vector<std::string>> build,
                  bool partial)
-    : major(major), minor(minor), patch(patch),
-      prerelease(std::move(prerelease)), build(std::move(build)), partial(partial)
+    : major_(major), minor_(minor), patch_(patch),
+      prerelease_(std::move(prerelease)), build_(std::move(build)), partial_(partial)
 {
-    if (!this->prerelease.has_value())
-        this->prerelease = std::vector<std::string>{};
-    if (!partial && !this->build.has_value())
-        this->build = std::vector<std::string>{};
+    if (!this->prerelease_.has_value())
+        this->prerelease_ = std::vector<std::string>{};
+    if (!partial_ && !this->build_.has_value())
+        this->build_ = std::vector<std::string>{};
     validate_kwargs();
     rebuild_keys();
 }
 
-std::string Version::to_string() const {
-    std::string v = std::to_string(major);
-    if (minor.has_value())
-        v += "." + std::to_string(*minor);
-    if (patch.has_value())
-        v += "." + std::to_string(*patch);
+int Version::major() const { return major_; }
+const std::optional<int>& Version::minor() const { return minor_; }
+const std::optional<int>& Version::patch() const { return patch_; }
+const std::optional<std::vector<std::string>>& Version::prerelease() const { return prerelease_; }
+const std::optional<std::vector<std::string>>& Version::build() const { return build_; }
+bool Version::partial() const { return partial_; }
 
-    if (prerelease.has_value() && !prerelease->empty()) {
-        v += "-" + detail::join(*prerelease, ".");
-    } else if (partial && prerelease.has_value() && prerelease->empty() && !build.has_value()) {
+std::string Version::to_string() const {
+    std::string v = std::to_string(major_);
+    if (minor_.has_value())
+        v += "." + std::to_string(*minor_);
+    if (patch_.has_value())
+        v += "." + std::to_string(*patch_);
+
+    if (prerelease_.has_value() && !prerelease_->empty()) {
+        v += "-" + detail::join(*prerelease_, ".");
+    } else if (partial_ && prerelease_.has_value() && prerelease_->empty() && !build_.has_value()) {
         v += "-";
     }
-    if (build.has_value() && !build->empty()) {
-        v += "+" + detail::join(*build, ".");
-    } else if (partial && build.has_value() && build->empty()) {
+    if (build_.has_value() && !build_->empty()) {
+        v += "+" + detail::join(*build_, ".");
+    } else if (partial_ && build_.has_value() && build_->empty()) {
         v += "+";
     }
     return v;
 }
 
-std::ostream& operator<<(std::ostream& os, const Version& v) {
+/*extern*/ std::ostream& operator<<(std::ostream& os, const Version& v) {
     return os << v.to_string();
 }
 
 bool Version::operator==(const Version& o) const {
-    return major == o.major
-        && minor == o.minor
-        && patch == o.patch
-        && prerelease.value_or(std::vector<std::string>{}) == o.prerelease.value_or(std::vector<std::string>{})
-        && build.value_or(std::vector<std::string>{}) == o.build.value_or(std::vector<std::string>{});
+    return major_ == o.major_
+        && minor_ == o.minor_
+        && patch_ == o.patch_
+        && prerelease_.value_or(std::vector<std::string>{}) == o.prerelease_.value_or(std::vector<std::string>{})
+        && build_.value_or(std::vector<std::string>{}) == o.build_.value_or(std::vector<std::string>{});
 }
 
 std::weak_ordering Version::operator<=>(const Version& o) const {
@@ -325,49 +332,49 @@ std::weak_ordering Version::operator<=>(const Version& o) const {
 }
 
 std::size_t Version::hash() const {
-    std::size_t h = std::hash<int>{}(major);
+    std::size_t h = std::hash<int>{}(major_);
     auto combine = [&](std::size_t v) { h ^= v + 0x9e3779b9 + (h << 6) + (h >> 2); };
-    combine(std::hash<int>{}(minor.value_or(-1)));
-    combine(std::hash<int>{}(patch.value_or(-1)));
-    if (prerelease) for (auto& s : *prerelease) combine(std::hash<std::string>{}(s));
-    if (build) for (auto& s : *build) combine(std::hash<std::string>{}(s));
+    combine(std::hash<int>{}(minor_.value_or(-1)));
+    combine(std::hash<int>{}(patch_.value_or(-1)));
+    if (prerelease_) for (auto& s : *prerelease_) combine(std::hash<std::string>{}(s));
+    if (build_) for (auto& s : *build_) combine(std::hash<std::string>{}(s));
     return h;
 }
 
 Version Version::next_major() const {
-    if (prerelease && !prerelease->empty() && minor.value_or(0) == 0 && patch.value_or(0) == 0)
-        return Version(major, 0, 0, std::vector<std::string>{}, std::nullopt, partial);
-    return Version(major + 1, 0, 0, std::vector<std::string>{}, std::nullopt, partial);
+    if (prerelease_ && !prerelease_->empty() && minor_.value_or(0) == 0 && patch_.value_or(0) == 0)
+        return Version(major_, 0, 0, std::vector<std::string>{}, std::nullopt, partial_);
+    return Version(major_ + 1, 0, 0, std::vector<std::string>{}, std::nullopt, partial_);
 }
 
 Version Version::next_minor() const {
-    if (prerelease && !prerelease->empty() && patch.value_or(0) == 0)
-        return Version(major, minor.value_or(0), 0, std::vector<std::string>{}, std::nullopt, partial);
-    return Version(major, minor.value_or(0) + 1, 0, std::vector<std::string>{}, std::nullopt, partial);
+    if (prerelease_ && !prerelease_->empty() && patch_.value_or(0) == 0)
+        return Version(major_, minor_.value_or(0), 0, std::vector<std::string>{}, std::nullopt, partial_);
+    return Version(major_, minor_.value_or(0) + 1, 0, std::vector<std::string>{}, std::nullopt, partial_);
 }
 
 Version Version::next_patch() const {
-    if (prerelease && !prerelease->empty())
-        return Version(major, minor.value_or(0), patch.value_or(0), std::vector<std::string>{}, std::nullopt, partial);
-    return Version(major, minor.value_or(0), patch.value_or(0) + 1, std::vector<std::string>{}, std::nullopt, partial);
+    if (prerelease_ && !prerelease_->empty())
+        return Version(major_, minor_.value_or(0), patch_.value_or(0), std::vector<std::string>{}, std::nullopt, partial_);
+    return Version(major_, minor_.value_or(0), patch_.value_or(0) + 1, std::vector<std::string>{}, std::nullopt, partial_);
 }
 
 Version Version::truncate(std::string_view level) const {
     if (level == "build")
-        return Version(major, minor, patch, prerelease, build, partial);
+        return Version(major_, minor_, patch_, prerelease_, build_, partial_);
     if (level == "prerelease")
-        return Version(major, minor, patch, prerelease, std::nullopt, partial);
+        return Version(major_, minor_, patch_, prerelease_, std::nullopt, partial_);
     if (level == "patch")
-        return Version(major, minor, patch, std::vector<std::string>{}, std::nullopt, partial);
+        return Version(major_, minor_, patch_, std::vector<std::string>{}, std::nullopt, partial_);
     if (level == "minor")
-        return Version(major, minor,
-                       partial ? std::optional<int>(std::nullopt) : std::optional<int>(0),
-                       std::vector<std::string>{}, std::nullopt, partial);
+        return Version(major_, minor_,
+                       partial_ ? std::optional<int>(std::nullopt) : std::optional<int>(0),
+                       std::vector<std::string>{}, std::nullopt, partial_);
     if (level == "major")
-        return Version(major,
-                       partial ? std::optional<int>(std::nullopt) : std::optional<int>(0),
-                       partial ? std::optional<int>(std::nullopt) : std::optional<int>(0),
-                       std::vector<std::string>{}, std::nullopt, partial);
+        return Version(major_,
+                       partial_ ? std::optional<int>(std::nullopt) : std::optional<int>(0),
+                       partial_ ? std::optional<int>(std::nullopt) : std::optional<int>(0),
+                       std::vector<std::string>{}, std::nullopt, partial_);
     throw std::invalid_argument("Invalid truncation level: " + std::string(level));
 }
 
@@ -516,15 +523,15 @@ bool Version::validate(std::string_view version_string) {
 void Version::rebuild_keys() {
     auto prerelease_key = build_prerelease_key();
     auto build_key = build_build_key();
-    cmp_key_ = {major, minor.value_or(0), patch.value_or(0), prerelease_key};
-    sort_key_ = {major, minor.value_or(0), patch.value_or(0), prerelease_key, build_key};
+    cmp_key_ = {major_, minor_.value_or(0), patch_.value_or(0), prerelease_key};
+    sort_key_ = {major_, minor_.value_or(0), patch_.value_or(0), prerelease_key, build_key};
 }
 
 std::vector<detail::Identifier> Version::build_prerelease_key() const {
-    if (prerelease && !prerelease->empty()) {
+    if (prerelease_ && !prerelease_->empty()) {
         std::vector<detail::Identifier> key;
-        key.reserve(prerelease->size());
-        for (auto& p : *prerelease)
+        key.reserve(prerelease_->size());
+        for (auto& p : *prerelease_)
             key.push_back(detail::make_identifier(p));
         return key;
     }
@@ -533,14 +540,14 @@ std::vector<detail::Identifier> Version::build_prerelease_key() const {
 
 std::vector<detail::Identifier> Version::build_build_key() const {
     std::vector<detail::Identifier> key;
-    if (build) {
-        for (auto& b : *build)
+    if (build_) {
+        for (auto& b : *build_)
             key.push_back(detail::make_identifier(b));
     }
     return key;
 }
 
-void Version::validate_identifiers(const std::vector<std::string>& ids, bool allow_leading_zeroes) {
+/*static*/ void Version::validate_identifiers(const std::vector<std::string>& ids, bool allow_leading_zeroes) {
     for (auto& item : ids) {
         if (item.empty())
             throw std::invalid_argument("Invalid empty identifier in: " + detail::join(ids, "."));
@@ -550,10 +557,10 @@ void Version::validate_identifiers(const std::vector<std::string>& ids, bool all
 }
 
 void Version::validate_kwargs() const {
-    if (prerelease.has_value())
-        validate_identifiers(*prerelease, false);
-    if (build.has_value())
-        validate_identifiers(*build, true);
+    if (prerelease_.has_value())
+        validate_identifiers(*prerelease_, false);
+    if (build_.has_value())
+        validate_identifiers(*build_, true);
 }
 
 // ============================================================================
@@ -573,9 +580,9 @@ std::size_t Always::hash_value() const { return 0xBEEF; }
 // --- Range ---
 Range::Range(Op op, Version target, PrePolicy pp, BuildPolicy bp)
     : op(op), target(std::move(target)), pre_policy(pp),
-      build_policy(this->target.build && !this->target.build->empty() ? BuildPolicy::STRICT : bp)
+      build_policy(this->target.build() && !this->target.build()->empty() ? BuildPolicy::STRICT : bp)
 {
-    if (this->target.build && !this->target.build->empty() && op != Op::EQ && op != Op::NEQ)
+    if (this->target.build() && !this->target.build()->empty() && op != Op::EQ && op != Op::NEQ)
         throw std::invalid_argument("Build numbers have no ordering.");
 }
 
@@ -584,7 +591,7 @@ bool Range::match(const Version& version) const {
     if (build_policy != BuildPolicy::STRICT)
         v = v.truncate("prerelease");
 
-    if (v.prerelease && !v.prerelease->empty()) {
+    if (v.prerelease() && !v.prerelease()->empty()) {
         bool same_patch = target.truncate() == v.truncate();
         if (pre_policy == PrePolicy::SAME_PATCH && !same_patch)
             return false;
@@ -594,28 +601,28 @@ bool Range::match(const Version& version) const {
     case Op::EQ:
         if (build_policy == BuildPolicy::STRICT) {
             return target.truncate("prerelease") == v.truncate("prerelease")
-                && v.build.value_or(std::vector<std::string>{}) == target.build.value_or(std::vector<std::string>{});
+                && v.build().value_or(std::vector<std::string>{}) == target.build().value_or(std::vector<std::string>{});
         }
         return v == target;
     case Op::GT: return v > target;
     case Op::GTE: return v >= target;
     case Op::LT:
-        if (v.prerelease && !v.prerelease->empty()
+        if (v.prerelease() && !v.prerelease()->empty()
             && pre_policy == PrePolicy::NATURAL
             && v.truncate() == target.truncate()
-            && (!target.prerelease || target.prerelease->empty()))
+            && (!target.prerelease() || target.prerelease()->empty()))
             return false;
         return v < target;
     case Op::LTE: return v <= target;
     case Op::NEQ:
         if (build_policy == BuildPolicy::STRICT) {
             return !(target.truncate("prerelease") == v.truncate("prerelease")
-                     && v.build.value_or(std::vector<std::string>{}) == target.build.value_or(std::vector<std::string>{}));
+                     && v.build().value_or(std::vector<std::string>{}) == target.build().value_or(std::vector<std::string>{}));
         }
-        if (v.prerelease && !v.prerelease->empty()
+        if (v.prerelease() && !v.prerelease()->empty()
             && pre_policy == PrePolicy::NATURAL
             && v.truncate() == target.truncate()
-            && (!target.prerelease || target.prerelease->empty()))
+            && (!target.prerelease() || target.prerelease()->empty()))
             return false;
         return v != target;
     }
@@ -764,7 +771,7 @@ SimpleSpec::SimpleSpec(std::string_view expression) {
     this->clause = parse_expression(expression);
 }
 
-ClausePtr SimpleSpec::parse_expression(std::string_view expression) {
+/*static*/ ClausePtr SimpleSpec::parse_expression(std::string_view expression) {
     auto blocks = detail::split(expression, ',');
     ClausePtr cl = make_always();
     for (auto& block : blocks)
@@ -772,7 +779,7 @@ ClausePtr SimpleSpec::parse_expression(std::string_view expression) {
     return cl;
 }
 
-ClausePtr SimpleSpec::parse_block(std::string_view expr) {
+/*static*/ ClausePtr SimpleSpec::parse_block(std::string_view expr) {
     auto sp = detail::parse_spec_block(expr);
 
     std::string prefix(sp.prefix);
@@ -816,8 +823,8 @@ ClausePtr SimpleSpec::parse_block(std::string_view expr) {
 
     if (prefix == "^") {
         Version high;
-        if (target.major > 0) high = target.next_major();
-        else if (target.minor.value_or(0) > 0) high = target.next_minor();
+        if (target.major() > 0) high = target.next_major();
+        else if (target.minor().value_or(0) > 0) high = target.next_minor();
         else high = target.next_patch();
         return make_range(Range::Op::GTE, target)->and_with(make_range(Range::Op::LT, high));
     }
@@ -885,11 +892,11 @@ NpmSpec::NpmSpec(std::string_view expression) {
     this->clause = parse_expression(expression);
 }
 
-ClausePtr NpmSpec::npm_range(Range::Op op, Version target) {
+/*static*/ ClausePtr NpmSpec::npm_range(Range::Op op, Version target) {
     return make_range(op, std::move(target), Range::PrePolicy::SAME_PATCH);
 }
 
-ClausePtr NpmSpec::parse_expression(std::string_view expression) {
+/*static*/ ClausePtr NpmSpec::parse_expression(std::string_view expression) {
     ClausePtr result = make_never();
     auto groups = split_joiner(expression);
     for (auto& group : groups) {
@@ -929,21 +936,21 @@ ClausePtr NpmSpec::parse_expression(std::string_view expression) {
         std::vector<ClausePtr> non_prerel_clauses;
         for (auto& cl : subclauses) {
             auto* range = dynamic_cast<Range*>(cl.get());
-            if (range && range->target.prerelease && !range->target.prerelease->empty()) {
+            if (range && range->target.prerelease() && !range->target.prerelease()->empty()) {
                 if (range->op == Range::Op::GT || range->op == Range::Op::GTE) {
                     prerelease_clauses.push_back(std::make_shared<Range>(
                         Range::Op::LT,
-                        Version(range->target.major,
-                                range->target.minor,
-                                range->target.patch.value_or(0) + 1,
+                        Version(range->target.major(),
+                                range->target.minor(),
+                                range->target.patch().value_or(0) + 1,
                                 std::vector<std::string>{},
                                 std::nullopt),
                         Range::PrePolicy::ALWAYS));
                 } else if (range->op == Range::Op::LT || range->op == Range::Op::LTE) {
                     prerelease_clauses.push_back(std::make_shared<Range>(
                         Range::Op::GTE,
-                        Version(range->target.major,
-                                range->target.minor,
+                        Version(range->target.major(),
+                                range->target.minor(),
                                 0,
                                 std::vector<std::string>{}),
                         Range::PrePolicy::ALWAYS));
@@ -962,7 +969,7 @@ ClausePtr NpmSpec::parse_expression(std::string_view expression) {
     return result;
 }
 
-std::vector<ClausePtr> NpmSpec::parse_simple(std::string_view simple) {
+/*static*/ std::vector<ClausePtr> NpmSpec::parse_simple(std::string_view simple) {
     auto sp = detail::parse_spec_block(simple, true);
 
     std::string prefix(sp.prefix);
@@ -996,9 +1003,9 @@ std::vector<ClausePtr> NpmSpec::parse_simple(std::string_view simple) {
 
     if (prefix == "^") {
         Version high;
-        if (target.major > 0) {
+        if (target.major() > 0) {
             high = target.truncate().next_major();
-        } else if (target.minor.value_or(0) > 0) {
+        } else if (target.minor().value_or(0) > 0) {
             high = target.truncate().next_minor();
         } else if (!minor_v.has_value()) {
             high = target.truncate().next_major();
@@ -1044,7 +1051,7 @@ std::vector<ClausePtr> NpmSpec::parse_simple(std::string_view simple) {
     throw std::invalid_argument("Invalid NPM prefix: " + prefix);
 }
 
-std::vector<std::string_view> NpmSpec::split_joiner(std::string_view s) {
+/*static*/ std::vector<std::string_view> NpmSpec::split_joiner(std::string_view s) {
     std::vector<std::string_view> parts;
     std::size_t pos = 0;
     while (pos < s.size()) {
@@ -1062,7 +1069,7 @@ std::vector<std::string_view> NpmSpec::split_joiner(std::string_view s) {
 // ============================================================================
 // Free functions
 // ============================================================================
-std::weak_ordering compare(std::string_view v1s, std::string_view v2s) {
+/*extern*/ std::weak_ordering compare(std::string_view v1s, std::string_view v2s) {
     Version v1{v1s};
     Version v2{v2s};
     std::weak_ordering ord = v1 <=> v2;
@@ -1071,11 +1078,11 @@ std::weak_ordering compare(std::string_view v1s, std::string_view v2s) {
     return Version(v1) <=> Version(v2);
 }
 
-bool match(std::string_view spec, std::string_view version) {
+/*extern*/ bool match(std::string_view spec, std::string_view version) {
     return SimpleSpec(spec).match(Version(version));
 }
 
-bool validate(std::string_view version_string) {
+/*extern*/ bool validate(std::string_view version_string) {
     return Version::validate(version_string);
 }
 

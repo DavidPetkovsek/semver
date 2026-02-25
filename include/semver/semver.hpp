@@ -31,22 +31,23 @@ using ClausePtr = std::shared_ptr<Clause>;
 // ============================================================================
 class SEMVER_API Version {
 public:
-    int major{};
-    std::optional<int> minor{};
-    std::optional<int> patch{};
-    std::optional<std::vector<std::string>> prerelease{};
-    std::optional<std::vector<std::string>> build{};
-    bool partial{false};
-
     // --- Constructors ---
     Version();
     explicit Version(std::string_view version_string, bool partial = false);
     Version(int major,
-            std::optional<int> minor,
-            std::optional<int> patch,
+            std::optional<int> minor = std::nullopt,
+            std::optional<int> patch = std::nullopt,
             std::optional<std::vector<std::string>> prerelease = std::vector<std::string>{},
             std::optional<std::vector<std::string>> build = std::nullopt,
             bool partial = false);
+
+    // --- Accessors ---
+    [[nodiscard]] int major() const;
+    [[nodiscard]] const std::optional<int>& minor() const;
+    [[nodiscard]] const std::optional<int>& patch() const;
+    [[nodiscard]] const std::optional<std::vector<std::string>>& prerelease() const;
+    [[nodiscard]] const std::optional<std::vector<std::string>>& build() const;
+    [[nodiscard]] bool partial() const;
 
     // --- String conversion ---
     [[nodiscard]] std::string to_string() const;
@@ -82,6 +83,13 @@ public:
     [[nodiscard]] static bool validate(std::string_view version_string);
 
 private:
+    int major_{};
+    std::optional<int> minor_{};
+    std::optional<int> patch_{};
+    std::optional<std::vector<std::string>> prerelease_{};
+    std::optional<std::vector<std::string>> build_{};
+    bool partial_{false};
+
     std::tuple<int, int, int, std::vector<detail::Identifier>> cmp_key_;
     std::tuple<int, int, int, std::vector<detail::Identifier>, std::vector<detail::Identifier>> sort_key_;
 
@@ -221,8 +229,8 @@ private:
 // ============================================================================
 // Free functions
 // ============================================================================
-SEMVER_API std::weak_ordering compare(std::string_view v1, std::string_view v2);
-SEMVER_API bool match(std::string_view spec, std::string_view version);
-SEMVER_API bool validate(std::string_view version_string);
+SEMVER_API extern std::weak_ordering compare(std::string_view v1, std::string_view v2);
+SEMVER_API extern bool match(std::string_view spec, std::string_view version);
+SEMVER_API extern bool validate(std::string_view version_string);
 
 } // namespace semver
