@@ -107,8 +107,8 @@ namespace detail {
     // Minor (required)
     if (pos >= s.size() || s[pos] != '.')
         throw std::invalid_argument("Invalid version string (missing minor): " + std::string(s));
-        ++pos;
-        p.minor_s = consume_digits(s, pos);
+    ++pos;
+    p.minor_s = consume_digits(s, pos);
     if (p.minor_s.empty())
         throw std::invalid_argument("Invalid version string (missing minor): " + std::string(s));
     p.has_minor = true;
