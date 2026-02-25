@@ -39,7 +39,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           $env:PATH = "${{ github.workspace }}\build\${{ matrix.build_type }};$env:PATH"
-          cmake --build build --config ${{ matrix.build_type }} -- /m
+          cmake --build build --config ${{ matrix.build_type }} -- /m /p:UseMultiToolTask=true /p:EnforceProcessCountAcrossBuilds=true
 
       - name: Test (Unix)
         if: runner.os != 'Windows'
