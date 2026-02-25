@@ -69,8 +69,10 @@ if(SEMVER_INSTALL)
 
     # Install the header.
     install(
-        FILES       include/semver.hpp
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES
+            include/semver/semver.hpp
+            include/semver/detail.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
     )
 
     # Install the target.
