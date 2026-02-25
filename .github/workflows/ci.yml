@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: "${{ matrix.os }} / ${{ matrix.build_type }} / ${{ matrix.shared && 'shared' || 'static' }}"
+    name: "${{ matrix.os }} / ${{ matrix.build_type }} / ${{ matrix.shared == 'ON' && 'shared' || 'static' }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,7 +28,7 @@ jobs:
           -DSEMVER_BUILD_SHARED=${{ matrix.shared }}
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }}
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
 
       - name: Test (Unix)
         if: runner.os != 'Windows'
