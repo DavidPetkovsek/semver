@@ -4,18 +4,10 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <ostream>
-#include <stdexcept>
-#include <string>
 #include <string_view>
-#include <tuple>
-#include <variant>
-#include <vector>
 
 #include "semver/detail.hpp"   // detail utilities, parsers, identifiers
 
@@ -60,13 +52,8 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Version& v);
 
     // --- Comparison ---
-    bool operator==(const Version& o) const;
-    bool operator!=(const Version& o) const;
-    bool operator<(const Version& o) const;
-    bool operator<=(const Version& o) const;
-    bool operator>(const Version& o) const;
-    bool operator>=(const Version& o) const;
-    [[nodiscard]] int cmp(const Version& o) const;
+    [[nodiscard]] bool operator==(const Version& o) const;
+    [[nodiscard]] std::weak_ordering operator<=>(const Version& o) const;
 
     // --- Hash ---
     [[nodiscard]] std::size_t hash() const;
@@ -233,7 +220,7 @@ private:
 // ============================================================================
 // Free functions
 // ============================================================================
-SEMVER_API int compare(std::string_view v1, std::string_view v2);
+SEMVER_API std::weak_ordering compare(std::string_view v1, std::string_view v2);
 SEMVER_API bool match(std::string_view spec, std::string_view version);
 SEMVER_API bool validate(std::string_view version_string);
 

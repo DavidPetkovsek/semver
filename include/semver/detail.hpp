@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
-#include <functional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -95,10 +92,7 @@ struct AlphaIdentifier {
 using Identifier = std::variant<NumericIdentifier, AlphaIdentifier, MaxIdentifier>;
 
 SEMVER_API bool operator==(const Identifier& a, const Identifier& b);
-SEMVER_API bool operator<(const Identifier& a, const Identifier& b);
-SEMVER_API bool operator<=(const Identifier& a, const Identifier& b);
-SEMVER_API bool operator>(const Identifier& a, const Identifier& b);
-SEMVER_API bool operator>=(const Identifier& a, const Identifier& b);
+SEMVER_API std::strong_ordering operator<=>(const Identifier& a, const Identifier& b);
 SEMVER_API Identifier make_identifier(std::string_view part);
 
 } // namespace detail

@@ -4,10 +4,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 
-#include <algorithm>
 #include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "semver/semver.hpp"
@@ -128,10 +126,10 @@ TEST_CASE("FormatTests: precedence", "[spec][format]") {
 // ==========================================================================
 
 TEST_CASE("TopLevel: compare", "[base][compare]") {
-    REQUIRE(semver::compare("0.1.0", "0.1.1") == -1);
-    REQUIRE(semver::compare("0.1.1", "0.1.1") == 0);
-    REQUIRE(semver::compare("0.1.1", "0.1.0") == 1);
-    REQUIRE(semver::compare("0.1.0-alpha", "0.1.0") == -1);
+    REQUIRE(semver::compare("0.1.0", "0.1.1") == std::weak_ordering::less);
+    REQUIRE(semver::compare("0.1.1", "0.1.1") == std::weak_ordering::equivalent);
+    REQUIRE(semver::compare("0.1.1", "0.1.0") == std::weak_ordering::greater);
+    REQUIRE(semver::compare("0.1.0-alpha", "0.1.0") == std::weak_ordering::less);
 
     // Build-only difference throws (NotImplemented equivalent).
     REQUIRE_THROWS(semver::compare("0.1.0-alpha+2", "0.1.0-alpha"));

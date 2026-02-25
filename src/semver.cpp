@@ -5,11 +5,8 @@
 
 #include <algorithm>
 #include <charconv>
-#include <numeric>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace semver {
 
@@ -237,17 +234,13 @@ bool operator==(const Identifier& a, const Identifier& b) {
     }, a);
 }
 
-bool operator<(const Identifier& a, const Identifier& b) {
-    if (a.index() != b.index()) return a.index() < b.index();
-    return std::visit([&](const auto& va) -> bool {
+std::strong_ordering operator<=>(const Identifier& a, const Identifier& b) {
+    if (a.index() != b.index()) return a.index() <=> b.index();
+    return std::visit([&](const auto& va) -> std::strong_ordering {
         using T = std::decay_t<decltype(va)>;
-        return va < std::get<T>(b);
+        return va <=> std::get<T>(b);
     }, a);
 }
-
-bool operator<=(const Identifier& a, const Identifier& b) { return !(b < a); }
-bool operator>(const Identifier& a, const Identifier& b) { return b < a; }
-bool operator>=(const Identifier& a, const Identifier& b) { return !(a < b); }
 
 Identifier make_identifier(std::string_view part) {
     if (is_digit_string(part))
@@ -322,17 +315,13 @@ bool Version::operator==(const Version& o) const {
         && prerelease.value_or(std::vector<std::string>{}) == o.prerelease.value_or(std::vector<std::string>{})
         && build.value_or(std::vector<std::string>{}) == o.build.value_or(std::vector<std::string>{});
 }
-bool Version::operator!=(const Version& o) const { return !(*this == o); }
-bool Version::operator<(const Version& o) const { return cmp_key_ < o.cmp_key_; }
-bool Version::operator<=(const Version& o) const { return cmp_key_ <= o.cmp_key_; }
-bool Version::operator>(const Version& o) const { return cmp_key_ > o.cmp_key_; }
-bool Version::operator>=(const Version& o) const { return cmp_key_ >= o.cmp_key_; }
 
-int Version::cmp(const Version& o) const {
-    if (*this < o) return -1;
-    if (*this > o) return 1;
-    if (*this == o) return 0;
-    throw std::logic_error("Versions differ only in build metadata; no ordering defined.");
+std::weak_ordering Version::operator<=>(const Version& o) const {
+    auto ordering = cmp_key_ <=> o.cmp_key_;
+    if (ordering != 0) return ordering;
+    // Versions equal by precedence but differing in build are unordered
+    if (*this == o) return std::weak_ordering::equivalent;
+    return std::weak_ordering::equivalent; // std::partial_ordering::unordered;
 }
 
 std::size_t Version::hash() const {
@@ -1073,9 +1062,13 @@ std::vector<std::string_view> NpmSpec::split_joiner(std::string_view s) {
 // ============================================================================
 // Free functions
 // ============================================================================
-
-int compare(std::string_view v1, std::string_view v2) {
-    return Version(v1).cmp(Version(v2));
+std::weak_ordering compare(std::string_view v1s, std::string_view v2s) {
+    Version v1{v1s};
+    Version v2{v2s};
+    std::weak_ordering ord = v1 <=> v2;
+    if((v1 == v2) != (ord == std::weak_ordering::equivalent))
+        throw std::logic_error("Versions differ only in build metadata; no ordering defined.");
+    return Version(v1) <=> Version(v2);
 }
 
 bool match(std::string_view spec, std::string_view version) {
