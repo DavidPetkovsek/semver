@@ -183,9 +183,9 @@ namespace detail {
     SpecParts p;
     std::size_t pos = 0;
 
-    if (allow_v_prefix && pos < s.size() && s[pos] == 'v') ++pos;
-
     p.prefix = consume_prefix(s, pos);
+
+    if (allow_v_prefix && pos < s.size() && s[pos] == 'v') ++pos;
 
     p.major_s = consume_number_or_wildcard(s, pos);
     if (p.major_s.empty())
@@ -1009,6 +1009,9 @@ NpmSpec::NpmSpec(std::string_view expression) {
         }
         parts.push_back(s.substr(pos, found - pos));
         pos = found + 2;
+    }
+    if (parts.empty()) {
+        parts.push_back(s);  // preserves "" for empty input
     }
     return parts;
 }
