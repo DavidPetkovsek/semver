@@ -1,5 +1,7 @@
 # semver
 
+[![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
+
 A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion).
 
 Parse, compare, and match versions against flexible range specifications following the [SemVer 2.0.0](https://semver.org/) standard. Includes both a simple/intuitive spec syntax and full [NPM-style range](https://github.com/npm/node-semver#ranges) support.
