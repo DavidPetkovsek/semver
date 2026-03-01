@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # --------------------------------------------------------------------------
 
 project(semver
-    VERSION   0.2.2
+    VERSION   0.3.0
     LANGUAGES CXX
     DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
@@ -44,8 +44,18 @@ target_include_directories(semver
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+target_include_directories(semver
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private-include>
+)
 
-target_compile_features(semver PUBLIC cxx_std_20)
+if(SEMVER_BUILD_SHARED)
+    if(APPLE)
+        target_link_options(semver PRIVATE -Wl,-undefined,error)
+    elseif(UNIX)
+        target_link_options(semver PRIVATE -Wl,--no-undefined)
+    endif()
+endif()
 
 set_target_properties(semver PROPERTIES
     VERSION                    ${PROJECT_VERSION}
@@ -78,7 +88,6 @@ include(CMakePackageConfigHelpers)
 install(
     FILES
         include/semver/semver.hpp
-        include/semver/detail.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
 )
 

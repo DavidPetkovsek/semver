@@ -4,24 +4,81 @@
 
 #pragma once
 
+#include <compare>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <ostream>
+#include <variant>
+#include <vector>
 
-#include "semver/detail.hpp"
+// ---------------------------------------------------------------------------
+// Export / import macros
+// ---------------------------------------------------------------------------
+#if defined(SEMVER_SHARED)
+#  if defined(_MSC_VER)
+#    if defined(SEMVER_EXPORTS)
+#      define SEMVER_API __declspec(dllexport)
+#    else
+#      define SEMVER_API __declspec(dllimport)
+#    endif
+#  elif defined(__GNUC__) || defined(__clang__)
+#    define SEMVER_API __attribute__((visibility("default")))
+#  else
+#    define SEMVER_API
+#  endif
+#else
+#  define SEMVER_API
+#endif
 
 namespace semver {
+
+// ============================================================================
+// Identifier types (for SemVer precedence ordering)
+// ============================================================================
+struct SEMVER_API MaxIdentifier {
+    auto operator<=>(const MaxIdentifier&) const = default;
+};
+struct SEMVER_API NumericIdentifier {
+    int value;
+    auto operator<=>(const NumericIdentifier&) const = default;
+};
+struct SEMVER_API AlphaIdentifier {
+    std::string value;
+    auto operator<=>(const AlphaIdentifier&) const = default;
+};
+
+using Identifier = std::variant<NumericIdentifier, AlphaIdentifier, MaxIdentifier>;
+
+SEMVER_API extern bool operator==(const Identifier& a, const Identifier& b);
+SEMVER_API extern std::strong_ordering operator<=>(const Identifier& a, const Identifier& b);
+
+struct SEMVER_API CmpKey {
+    int major, minor, patch;
+    std::vector<Identifier> prerelease;
+    auto operator<=>(const CmpKey&) const = default;
+    bool operator==(const CmpKey&) const = default;
+};
+
+struct SEMVER_API SortKey {
+    int major, minor, patch;
+    std::vector<Identifier> prerelease;
+    std::vector<Identifier> build;
+    auto operator<=>(const SortKey&) const = default;
+    bool operator==(const SortKey&) const = default;
+};
 
 // ============================================================================
 // Forward declarations
 // ============================================================================
 class Version;
-class Clause;
 class SimpleSpec;
 class NpmSpec;
 
+// Opaque clause pointer — concrete clause types are internal to the .cpp.
+class Clause;
 using ClausePtr = std::shared_ptr<Clause>;
 
 // ============================================================================
@@ -68,12 +125,7 @@ public:
     // --- Coerce ---
     [[nodiscard]] static Version coerce(std::string_view version_string);
 
-    // --- Parse ---
-    [[nodiscard]] static std::tuple<int, int, int,
-                                    std::vector<std::string>,
-                                    std::vector<std::string>>
-    parse(std::string_view version_string);
-
+    // --- Validate ---
     [[nodiscard]] static bool validate(std::string_view version_string);
 
 private:
@@ -83,14 +135,13 @@ private:
     std::vector<std::string> prerelease_{};
     std::vector<std::string> build_{};
 
-    std::tuple<int, int, int, std::vector<detail::Identifier>> cmp_key_;
-    std::tuple<int, int, int, std::vector<detail::Identifier>, std::vector<detail::Identifier>> sort_key_;
+    CmpKey cmp_key_;
+    SortKey sort_key_;
 
     void rebuild_keys();
-    [[nodiscard]] std::vector<detail::Identifier> build_prerelease_key() const;
-    [[nodiscard]] std::vector<detail::Identifier> build_build_key() const;
-    static void validate_identifiers(const std::vector<std::string>& ids, bool allow_leading_zeroes);
-    void validate_kwargs() const;
+    [[nodiscard]] std::vector<Identifier> build_prerelease_key() const;
+    [[nodiscard]] std::vector<Identifier> build_build_key() const;
+    void validate_identifiers() const;
 };
 
 SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::Version& v);
@@ -106,87 +157,10 @@ struct std::hash<semver::Version> {
 namespace semver {
 
 // ============================================================================
-// Clause hierarchy
-// ============================================================================
-class SEMVER_API Clause : public std::enable_shared_from_this<Clause> {
-public:
-    virtual ~Clause() = default;
-    [[nodiscard]] virtual bool match(const Version& version) const = 0;
-    [[nodiscard]] virtual bool operator==(const Clause& o) const = 0;
-    [[nodiscard]] virtual std::size_t hash_value() const = 0;
-    [[nodiscard]] ClausePtr and_with(ClausePtr other) const;
-    [[nodiscard]] ClausePtr or_with(ClausePtr other) const;
-};
-
-class SEMVER_API Never : public Clause {
-public:
-    [[nodiscard]] bool match(const Version&) const override;
-    [[nodiscard]] bool operator==(const Clause& o) const override;
-    [[nodiscard]] std::size_t hash_value() const override;
-};
-
-class SEMVER_API Always : public Clause {
-public:
-    [[nodiscard]] bool match(const Version&) const override;
-    [[nodiscard]] bool operator==(const Clause& o) const override;
-    [[nodiscard]] std::size_t hash_value() const override;
-};
-
-class SEMVER_API Range : public Clause {
-public:
-    enum class Op { EQ, GT, GTE, LT, LTE, NEQ };
-    enum class PrePolicy { ALWAYS, NATURAL, SAME_PATCH };
-    enum class BuildPolicy { IMPLICIT, STRICT };
-
-    Op op;
-    Version target;
-    PrePolicy pre_policy;
-    BuildPolicy build_policy;
-
-    Range(Op op, Version target, PrePolicy pp = PrePolicy::NATURAL, BuildPolicy bp = BuildPolicy::IMPLICIT);
-
-    [[nodiscard]] bool match(const Version& version) const override;
-    [[nodiscard]] bool operator==(const Clause& o) const override;
-    [[nodiscard]] std::size_t hash_value() const override;
-};
-
-class SEMVER_API AllOf : public Clause {
-public:
-    std::vector<ClausePtr> clauses;
-    explicit AllOf(std::vector<ClausePtr> c);
-    AllOf(std::initializer_list<ClausePtr> c);
-
-    [[nodiscard]] bool match(const Version& version) const override;
-    [[nodiscard]] bool operator==(const Clause& o) const override;
-    [[nodiscard]] std::size_t hash_value() const override;
-};
-
-class SEMVER_API AnyOf : public Clause {
-public:
-    std::vector<ClausePtr> clauses;
-    explicit AnyOf(std::vector<ClausePtr> c);
-    AnyOf(std::initializer_list<ClausePtr> c);
-
-    [[nodiscard]] bool match(const Version& version) const override;
-    [[nodiscard]] bool operator==(const Clause& o) const override;
-    [[nodiscard]] std::size_t hash_value() const override;
-};
-
-// --- Clause factory helpers ---
-SEMVER_API ClausePtr make_never();
-SEMVER_API ClausePtr make_always();
-SEMVER_API ClausePtr make_range(Range::Op op, Version target,
-                                Range::PrePolicy pp = Range::PrePolicy::NATURAL,
-                                Range::BuildPolicy bp = Range::BuildPolicy::IMPLICIT);
-
-// ============================================================================
 // BaseSpec / SimpleSpec / NpmSpec
 // ============================================================================
 class SEMVER_API BaseSpec {
 public:
-    std::string expression;
-    ClausePtr clause;
-
     [[nodiscard]] bool match(const Version& v) const;
     [[nodiscard]] std::vector<Version> filter(const std::vector<Version>& versions) const;
     [[nodiscard]] std::optional<Version> select(const std::vector<Version>& versions) const;
@@ -199,6 +173,9 @@ public:
 protected:
     BaseSpec() = default;
     BaseSpec(std::string expr, ClausePtr c);
+
+    std::string expression_;
+    ClausePtr clause_;
 };
 
 SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseSpec& s);
@@ -206,21 +183,11 @@ SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseS
 class SEMVER_API SimpleSpec : public BaseSpec {
 public:
     explicit SimpleSpec(std::string_view expression);
-
-private:
-    [[nodiscard]] static ClausePtr parse_expression(std::string_view expression);
-    static ClausePtr parse_block(std::string_view expr);
 };
 
 class SEMVER_API NpmSpec : public BaseSpec {
 public:
     explicit NpmSpec(std::string_view expression);
-
-private:
-    static ClausePtr npm_range(Range::Op op, Version target);
-    static ClausePtr parse_expression(std::string_view expression);
-    static std::vector<ClausePtr> parse_simple(std::string_view simple);
-    static std::vector<std::string_view> split_joiner(std::string_view s);
 };
 
 // ============================================================================
@@ -230,5 +197,16 @@ SEMVER_API extern std::weak_ordering compare(std::string_view v1, std::string_vi
 SEMVER_API extern bool match(std::string_view spec, std::string_view version);
 SEMVER_API extern bool validate(std::string_view version_string);
 SEMVER_API extern bool attempt_parse(std::string_view version_string, Version &output) noexcept;
+SEMVER_API extern bool attempt_parse(std::string_view version_string, Version &output, std::string &reason) noexcept;
 
 } // namespace semver
+
+// std::hash specializations for specs
+template<>
+struct std::hash<semver::SimpleSpec> {
+    std::size_t operator()(const semver::SimpleSpec& s) const noexcept { return s.hash(); }
+};
+template<>
+struct std::hash<semver::NpmSpec> {
+    std::size_t operator()(const semver::NpmSpec& s) const noexcept { return s.hash(); }
+};
