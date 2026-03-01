@@ -354,6 +354,45 @@ spec.match(semver::Version("3.0.0"));           // true
 spec.match(semver::Version("3.0.1"));           // false
 ```
 
+#### Minimum version
+
+`min_version()` returns the lowest `Version` that can possibly satisfy the spec — useful for lock file resolution. Available on both `SimpleSpec` and `NpmSpec` (inherited from `BaseSpec`):
+
+```cpp
+semver::NpmSpec("^1.2.3").min_version();           // Version("1.2.3")
+semver::NpmSpec(">=1.0.0 <2.0.0").min_version();   // Version("1.0.0")
+semver::NpmSpec(">1.0.0").min_version();            // Version("1.0.1")
+semver::NpmSpec(">1.0.0-beta").min_version();       // Version("1.0.0-beta.0")
+semver::NpmSpec("*").min_version();                 // Version("0.0.0")
+semver::NpmSpec(">4 <3").min_version();             // std::nullopt (impossible)
+
+semver::SimpleSpec(">=1.0.0,<2.0.0").min_version(); // Version("1.0.0")
+semver::SimpleSpec("^1.2.3").min_version();          // Version("1.2.3")
+```
+
+#### Subset checking
+
+`subset()` checks whether every version matched by the argument is also matched by `*this` — useful for dependency auditing. Available on both `SimpleSpec` and `NpmSpec`, but cross-spec comparison is not supported because the two use different prerelease matching policies, [see differences.md for more info](./differences.md#npmspecsubset--simplespecsubset):
+
+```cpp
+auto wide   = semver::NpmSpec(">=1.0.0");
+auto narrow = semver::NpmSpec("^1.2.3");
+
+wide.subset(narrow);    // true  — everything ^1.2.3 matches is within >=1.0.0
+narrow.subset(wide);    // false — >=1.0.0 includes 2.0.0 which ^1.2.3 rejects
+
+semver::NpmSpec("*").subset(semver::NpmSpec("^1.0.0"));          // true
+semver::NpmSpec("^2 || ^3 || ^4").subset(semver::NpmSpec("^3")); // true
+semver::NpmSpec("^2 || ^3 || ^4").subset(semver::NpmSpec("^1")); // false
+
+// Works with SimpleSpec too:
+semver::SimpleSpec(">=1.0.0").subset(semver::SimpleSpec("^1.2.3")); // true
+
+// Cross-spec does NOT compile — different prerelease semantics:
+// semver::SimpleSpec(">=1.0.0").subset(semver::NpmSpec("^1.2.3")); // compile error
+// semver::NpmSpec("^1.2.3").subset(semver::SimpleSpec(">=1.0.0")); // compile error
+```
+
 ---
 
 ### Convenience free functions
@@ -364,12 +403,18 @@ semver::compare("2.0.0", "1.0.0");        //  std::weak_ordering::greater
 semver::compare("1.0.0", "1.0.0");        //  std::weak_ordering::equivalent
 
 semver::match(">=1.0.0,<2.0.0", "1.5.0");  // true  (uses SimpleSpec)
+semver::npm_match("^1.0.0", "1.5.0");      // true  (uses NpmSpec)
 semver::validate("1.2.3");                 // true
 semver::validate("nope");                  // false
 
 semver::Version v;
 if(!semver::attempt_parse("1.2.3", v))
     throw std::runtime_error("bad version");  // does not throw because parsing succeeded
+std::cout << v;                               // 1.2.3
+
+std::string reason;
+if(!semver::attempt_parse("bad", v, reason))
+    throw std::runtime_error(reason);         // If thrown, `reason` contains exception's `what()` the ctor threw
 std::cout << v;                               // 1.2.3
 ```
 

@@ -1058,6 +1058,312 @@ NpmSpec::NpmSpec(std::string_view expression) {
     clause_ = npm_parse_expression(expression);
 }
 
+// ---------------------------------------------------------------------------
+// NpmSpec::min_version()  —  lowest version that can satisfy the range
+// ---------------------------------------------------------------------------
+
+// Walk a clause tree and find, for each AND-branch, the tightest lower
+// bound implied by > or >= comparators.  For an OR (AnyOf) take the min
+// across branches.  Returns nullopt for impossible / never ranges.
+static std::optional<Version> min_version_from_clause(const Clause* cl) {
+    if (dynamic_cast<const Never*>(cl))
+        return std::nullopt;
+
+    if (dynamic_cast<const Always*>(cl))
+        return Version(0, 0, 0);
+
+    if (auto* r = dynamic_cast<const Range*>(cl)) {
+        switch (r->op) {
+        case Range::Op::EQ:
+        case Range::Op::GTE:
+            return r->target;
+        case Range::Op::GT: {
+            // >X.Y.Z  →  X.Y.(Z+1)  if no prerelease
+            //          →  X.Y.Z-pre.0 if prerelease present
+            auto v = r->target;
+            if (v.prerelease().empty()) {
+                return Version(v.major(), v.minor(), v.patch() + 1);
+            } else {
+                auto pr = v.prerelease();
+                pr.push_back("0");
+                return Version(v.major(), v.minor(), v.patch(), std::move(pr));
+            }
+        }
+        case Range::Op::LT:
+        case Range::Op::LTE:
+            // Upper bounds don't set a min; the min is 0.0.0 or 0.0.0-0
+            // (the caller / AllOf branch handles combining with lower bounds).
+            return std::nullopt;
+        case Range::Op::NEQ:
+            return std::nullopt;
+        }
+        return std::nullopt;
+    }
+
+    if (auto* all = dynamic_cast<const AllOf*>(cl)) {
+        // The minimum of an AND-set is the *highest* lower bound.
+        std::optional<Version> best;
+        for (auto& c : all->clauses) {
+            auto m = min_version_from_clause(c.get());
+            if (m.has_value()) {
+                if (!best.has_value() || *m > *best)
+                    best = m;
+            }
+        }
+        return best; // may still be nullopt if only upper-bound clauses
+    }
+
+    if (auto* any = dynamic_cast<const AnyOf*>(cl)) {
+        // The minimum across OR branches is the *lowest* candidate.
+        std::optional<Version> best;
+        for (auto& c : any->clauses) {
+            auto m = min_version_from_clause(c.get());
+            if (m.has_value()) {
+                if (!best.has_value() || *m < *best)
+                    best = m;
+            }
+        }
+        return best;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<Version> BaseSpec::min_version() const {
+    // Fast-path: try 0.0.0, then 0.0.0-0 (mirrors node-semver).
+    if (match(Version(0, 0, 0)))
+        return Version(0, 0, 0);
+    if (match(Version(0, 0, 0, {"0"})))
+        return Version(0, 0, 0, {"0"});
+
+    auto candidate = min_version_from_clause(clause_.get());
+    if (candidate.has_value() && match(*candidate))
+        return candidate;
+    return std::nullopt;
+}
+
+// ---------------------------------------------------------------------------
+// NpmSpec::subset()  —  is `other` entirely contained within *this?
+// ---------------------------------------------------------------------------
+
+// For a "simple" comparator set (a single AND-branch), extract the
+// effective GT/GTE and LT/LTE bounds plus any EQ pins.
+struct SimpleBounds {
+    const Range* gt  = nullptr; // highest > or >=
+    const Range* lt  = nullptr; // lowest  < or <=
+    std::vector<const Range*> eqs;
+    bool is_null_set = false;    // conflicting constraints
+};
+
+static SimpleBounds extract_bounds(const Clause* cl) {
+    SimpleBounds b;
+
+    auto process_range = [&](const Range* r) {
+        switch (r->op) {
+        case Range::Op::GT:
+        case Range::Op::GTE:
+            if (!b.gt) {
+                b.gt = r;
+            } else {
+                // keep the higher lower-bound
+                if (r->target > b.gt->target)
+                    b.gt = r;
+                else if (r->target == b.gt->target && r->op == Range::Op::GT)
+                    b.gt = r; // > is stricter than >=
+            }
+            break;
+        case Range::Op::LT:
+        case Range::Op::LTE:
+            if (!b.lt) {
+                b.lt = r;
+            } else {
+                // keep the lower upper-bound
+                if (r->target < b.lt->target)
+                    b.lt = r;
+                else if (r->target == b.lt->target && r->op == Range::Op::LT)
+                    b.lt = r; // < is stricter than <=
+            }
+            break;
+        case Range::Op::EQ:
+            b.eqs.push_back(r);
+            break;
+        case Range::Op::NEQ:
+            break; // NEQ doesn't define bounds
+        }
+    };
+
+    if (dynamic_cast<const Never*>(cl)) {
+        b.is_null_set = true;
+        return b;
+    }
+    if (dynamic_cast<const Always*>(cl)) {
+        return b; // no bounds = match everything
+    }
+    if (auto* r = dynamic_cast<const Range*>(cl)) {
+        process_range(r);
+    } else if (auto* all = dynamic_cast<const AllOf*>(cl)) {
+        for (auto& c : all->clauses) {
+            if (auto* r = dynamic_cast<const Range*>(c.get()))
+                process_range(r);
+            // nested AllOf/AnyOf inside an AllOf is unusual but handle gracefully
+        }
+    }
+
+    // Detect null sets: GT >= LT, or GT > LT, etc.
+    if (b.gt && b.lt) {
+        if (b.gt->target > b.lt->target) {
+            b.is_null_set = true;
+        } else if (b.gt->target == b.lt->target) {
+            if (b.gt->op != Range::Op::GTE || b.lt->op != Range::Op::LTE)
+                b.is_null_set = true;
+        }
+    }
+    // Multiple distinct EQ pins → null set
+    if (b.eqs.size() > 1) {
+        for (std::size_t i = 1; i < b.eqs.size(); ++i)
+            if (!(b.eqs[i]->target == b.eqs[0]->target))
+                b.is_null_set = true;
+    }
+    return b;
+}
+
+// Collect the "simple" (AND) branches of a parsed clause.
+// An AnyOf at the top level gives multiple branches; anything else is one.
+static std::vector<const Clause*> collect_simple_branches(const Clause* cl) {
+    if (auto* any = dynamic_cast<const AnyOf*>(cl)) {
+        std::vector<const Clause*> out;
+        for (auto& c : any->clauses)
+            out.push_back(c.get());
+        return out;
+    }
+    return {cl};
+}
+
+// Check whether a single simple sub-range is a subset of a single simple
+// dom-range.  Returns true/false, or nullopt if sub is a null-set (which
+// means it's trivially a subset of anything).
+static std::optional<bool> is_subset_simple(const Clause* sub_cl,
+                                            const Clause* dom_cl) {
+    auto sub = extract_bounds(sub_cl);
+    auto dom = extract_bounds(dom_cl);
+
+    if (sub.is_null_set)
+        return std::nullopt; // null set — subset of everything
+
+    // If sub has EQ pins, each must satisfy the dom.
+    if (!sub.eqs.empty()) {
+        // Check EQ is consistent with sub's own GT/LT
+        auto& eq_ver = sub.eqs[0]->target;
+        if (sub.gt) {
+            bool ok = (sub.gt->op == Range::Op::GTE)
+                          ? eq_ver >= sub.gt->target
+                          : eq_ver > sub.gt->target;
+            if (!ok) return std::nullopt; // null set
+        }
+        if (sub.lt) {
+            bool ok = (sub.lt->op == Range::Op::LTE)
+                          ? eq_ver <= sub.lt->target
+                          : eq_ver < sub.lt->target;
+            if (!ok) return std::nullopt; // null set
+        }
+        // The EQ version must match the dom range.
+        // We can test this by checking the dom clause directly.
+        return dom_cl->match(eq_ver);
+    }
+
+    // If sub's GT and LT bounds collapse to a single point, treat it as EQ.
+    // e.g. >=1.0.0 <=1.0.0  is effectively  =1.0.0
+    if (sub.gt && sub.lt && sub.eqs.empty()
+        && sub.gt->op == Range::Op::GTE && sub.lt->op == Range::Op::LTE
+        && sub.gt->target == sub.lt->target) {
+        return dom_cl->match(sub.gt->target);
+    }
+
+    // dom has EQ constraints but sub doesn't: sub is wider.
+    if (!dom.eqs.empty() && (sub.gt || sub.lt))
+        return false;
+
+    // Check GT/GTE bound: sub's lower bound must be >= dom's lower bound.
+    if (sub.gt && dom.gt) {
+        if (sub.gt->target < dom.gt->target)
+            return false;
+        if (sub.gt->target == dom.gt->target) {
+            // >= is wider than >, so sub(>=) ⊂ dom(>) only if sub is also >
+            if (dom.gt->op == Range::Op::GT && sub.gt->op == Range::Op::GTE)
+                return false;
+        }
+    } else if (!sub.gt && dom.gt) {
+        // sub has no lower bound but dom does — sub is wider.
+        return false;
+    }
+    // sub has GT, dom doesn't — ok, dom is wider at the bottom.
+
+    // Check LT/LTE bound: sub's upper bound must be <= dom's upper bound.
+    if (sub.lt && dom.lt) {
+        if (sub.lt->target > dom.lt->target)
+            return false;
+        if (sub.lt->target == dom.lt->target) {
+            if (dom.lt->op == Range::Op::LT && sub.lt->op == Range::Op::LTE)
+                return false;
+        }
+    } else if (!sub.lt && dom.lt) {
+        return false;
+    }
+
+    // If sub has a GT bound, check it satisfies the dom clause.
+    if (sub.gt && sub.gt->op == Range::Op::GTE) {
+        if (!dom_cl->match(sub.gt->target))
+            return false;
+    }
+
+    // If sub has an LT bound, check it satisfies the dom clause.
+    if (sub.lt && sub.lt->op == Range::Op::LTE) {
+        if (!dom_cl->match(sub.lt->target))
+            return false;
+    }
+
+    // If dom has no GT and no LT and no EQ (i.e. Always), sub is trivially a subset.
+    // If sub has a GT with no LT, dom must have no LT either (checked above).
+    // Looks like sub fits inside dom.
+    return true;
+}
+
+bool BaseSpec::subset_impl(const BaseSpec& other) const {
+    if (*this == other)
+        return true;
+
+    auto sub_branches = collect_simple_branches(other.clause_.get());
+    auto dom_branches = collect_simple_branches(clause_.get());
+
+    bool saw_non_null = false;
+
+    for (auto* sub_cl : sub_branches) {
+        bool matched = false;
+        for (auto* dom_cl : dom_branches) {
+            auto result = is_subset_simple(sub_cl, dom_cl);
+            if (!result.has_value()) {
+                // null set — skip, doesn't count as non-null
+                matched = true;
+                break;
+            }
+            saw_non_null = true;
+            if (*result) {
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            if (saw_non_null)
+                return false;
+            // If all sub-branches so far were null sets, continue.
+        }
+    }
+    return true;
+}
+
+bool SimpleSpec::subset(const SimpleSpec& other) const { return subset_impl(other); }
+bool NpmSpec::subset(const NpmSpec& other) const { return subset_impl(other); }
+
 // ============================================================================
 // Free functions
 // ============================================================================
@@ -1072,6 +1378,10 @@ NpmSpec::NpmSpec(std::string_view expression) {
 
 /*extern*/ bool match(std::string_view spec, std::string_view version) {
     return SimpleSpec(spec).match(Version(version));
+}
+
+/*extern*/ bool npm_match(std::string_view spec, std::string_view version) {
+    return NpmSpec(spec).match(Version(version));
 }
 
 /*extern*/ bool validate(std::string_view version_string) {

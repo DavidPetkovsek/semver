@@ -19,6 +19,7 @@ endif()
 add_executable(semver_tests
     test_semver.cpp
     test_npm_spec.cpp
+    test_npm_extras.cpp
 )
 
 target_link_libraries(semver_tests
