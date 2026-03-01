@@ -9,7 +9,6 @@
 #include <compare>
 #include <exception>
 #include <stdexcept>
-#include <tuple>
 #include <string>
 
 namespace semver {

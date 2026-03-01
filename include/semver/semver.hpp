@@ -11,7 +11,6 @@
 #include <string>
 #include <string_view>
 #include <ostream>
-#include <tuple>
 #include <variant>
 #include <vector>
 
@@ -55,6 +54,21 @@ using Identifier = std::variant<NumericIdentifier, AlphaIdentifier, MaxIdentifie
 
 SEMVER_API extern bool operator==(const Identifier& a, const Identifier& b);
 SEMVER_API extern std::strong_ordering operator<=>(const Identifier& a, const Identifier& b);
+
+struct SEMVER_API CmpKey {
+    int major, minor, patch;
+    std::vector<Identifier> prerelease;
+    auto operator<=>(const CmpKey&) const = default;
+    bool operator==(const CmpKey&) const = default;
+};
+
+struct SEMVER_API SortKey {
+    int major, minor, patch;
+    std::vector<Identifier> prerelease;
+    std::vector<Identifier> build;
+    auto operator<=>(const SortKey&) const = default;
+    bool operator==(const SortKey&) const = default;
+};
 
 // ============================================================================
 // Forward declarations
@@ -121,8 +135,8 @@ private:
     std::vector<std::string> prerelease_{};
     std::vector<std::string> build_{};
 
-    std::tuple<int, int, int, std::vector<Identifier>> cmp_key_;
-    std::tuple<int, int, int, std::vector<Identifier>, std::vector<Identifier>> sort_key_;
+    CmpKey cmp_key_;
+    SortKey sort_key_;
 
     void rebuild_keys();
     [[nodiscard]] std::vector<Identifier> build_prerelease_key() const;
