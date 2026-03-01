@@ -5,8 +5,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 
+#include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "semver/semver.hpp"
@@ -785,4 +788,195 @@ TEST_CASE("attempt_parse: free function", "[attempt_parse]") {
     success = semver::attempt_parse("1.0.3.3", v);
     REQUIRE(v.to_string() == "1.0.1");
     REQUIRE(!success);
+}
+
+// =========================================================================
+// Expression normalization — whitespace should not affect equality/<=>
+// =========================================================================
+
+TEST_CASE("BaseSpec: normalization — whitespace does not affect equality", "[spec][normalize]") {
+    auto a = NpmSpec("^1.0.0 || >=2.0.0");
+    auto b = NpmSpec("  ^1.0.0   ||   >=2.0.0  ");
+    auto c = NpmSpec("^1.0.0||>=2.0.0");
+
+    REQUIRE(a == b);
+    REQUIRE(a == c);
+    REQUIRE(b == c);
+}
+
+TEST_CASE("BaseSpec: normalization — ordering consistent with equality", "[spec][normalize][ordering]") {
+    auto a = NpmSpec("^1.0.0 || >=2.0.0");
+    auto b = NpmSpec("  ^1.0.0   ||   >=2.0.0  ");
+
+    // Same expression after normalization, so <=> should be equivalent
+    REQUIRE((a <=> b) == std::strong_ordering::equivalent);
+    REQUIRE(a.hash() == b.hash());
+}
+
+TEST_CASE("BaseSpec: normalization — different specs still differ", "[spec][normalize][ordering]") {
+    auto a = NpmSpec("^1.0.0");
+    auto b = NpmSpec("^2.0.0");
+
+    REQUIRE(a != b);
+    REQUIRE((a <=> b) != std::strong_ordering::equivalent);
+}
+
+TEST_CASE("BaseSpec: ordering — consistent and antisymmetric", "[spec][ordering]") {
+    auto a = NpmSpec("^1.0.0");
+    auto b = NpmSpec("^2.0.0");
+    auto c = NpmSpec("~3.0.0");
+
+    auto ab = a <=> b;
+    auto ba = b <=> a;
+
+    // Antisymmetric
+    if (ab == std::strong_ordering::less) {
+        REQUIRE(ba == std::strong_ordering::greater);
+    } else {
+        REQUIRE(ba == std::strong_ordering::less);
+    }
+
+    // Transitivity sanity: if a < b and b < c, then a < c
+    auto bc = b <=> c;
+    auto ac = a <=> c;
+    if (ab == std::strong_ordering::less && bc == std::strong_ordering::less) {
+        REQUIRE(ac == std::strong_ordering::less);
+    }
+}
+
+TEST_CASE("SimpleSpec: normalization and ordering", "[spec][simple][normalize]") {
+    auto a = SimpleSpec(">=1.0.0,<2.0.0");
+    auto b = SimpleSpec("  >=1.0.0 , <2.0.0  ");
+
+    REQUIRE(a == b);
+    REQUIRE((a <=> b) == std::strong_ordering::equivalent);
+    REQUIRE(a.hash() == b.hash());
+}
+
+// =========================================================================
+// Container compatibility — compile-time sanity checks
+// These tests exist primarily to ensure Version, SimpleSpec, and NpmSpec
+// satisfy the requirements for standard containers. If they compile and
+// run without crashing, they pass.
+// =========================================================================
+
+TEST_CASE("Container compatibility: Version", "[container][version]") {
+    Version v1("1.0.0"), v2("2.0.0"), v3("1.0.0");
+
+    SECTION("std::vector") {
+        std::vector<Version> vec = {v1, v2, v3};
+        REQUIRE(vec.size() == 3);
+    }
+
+    SECTION("std::set") {
+        std::set<Version> s = {v1, v2, v3};
+        REQUIRE(s.size() == 2); // v1 == v3
+        REQUIRE(s.count(Version("1.0.0")) == 1);
+        REQUIRE(s.count(Version("2.0.0")) == 1);
+    }
+
+    SECTION("std::map") {
+        std::map<Version, std::string> m;
+        m[v1] = "one";
+        m[v2] = "two";
+        m[v3] = "three"; // overwrites v1
+        REQUIRE(m.size() == 2);
+        REQUIRE(m[Version("1.0.0")] == "three");
+    }
+
+    SECTION("std::unordered_set") {
+        std::unordered_set<Version> us = {v1, v2, v3};
+        REQUIRE(us.size() == 2);
+        REQUIRE(us.count(Version("1.0.0")) == 1);
+    }
+
+    SECTION("std::unordered_map") {
+        std::unordered_map<Version, int> um;
+        um[v1] = 1;
+        um[v2] = 2;
+        um[v3] = 3;
+        REQUIRE(um.size() == 2);
+        REQUIRE(um[Version("1.0.0")] == 3);
+    }
+}
+
+TEST_CASE("Container compatibility: NpmSpec", "[container][npm]") {
+    NpmSpec s1("^1.0.0"), s2("^2.0.0"), s3("^1.0.0");
+
+    SECTION("std::vector") {
+        std::vector<NpmSpec> vec = {s1, s2, s3};
+        REQUIRE(vec.size() == 3);
+    }
+
+    SECTION("std::set") {
+        std::set<NpmSpec> s = {s1, s2, s3};
+        REQUIRE(s.size() == 2);
+    }
+
+    SECTION("std::map") {
+        std::map<NpmSpec, std::string> m;
+        m[s1] = "a";
+        m[s2] = "b";
+        m[s3] = "c";
+        REQUIRE(m.size() == 2);
+    }
+
+    SECTION("std::unordered_set") {
+        std::unordered_set<NpmSpec> us = {s1, s2, s3};
+        REQUIRE(us.size() == 2);
+    }
+
+    SECTION("std::unordered_map") {
+        std::unordered_map<NpmSpec, int> um;
+        um[s1] = 1;
+        um[s2] = 2;
+        um[s3] = 3;
+        REQUIRE(um.size() == 2);
+    }
+}
+
+TEST_CASE("Container compatibility: SimpleSpec", "[container][simple]") {
+    SimpleSpec s1(">=1.0.0"), s2(">=2.0.0"), s3(">=1.0.0");
+
+    SECTION("std::vector") {
+        std::vector<SimpleSpec> vec = {s1, s2, s3};
+        REQUIRE(vec.size() == 3);
+    }
+
+    SECTION("std::set") {
+        std::set<SimpleSpec> s = {s1, s2, s3};
+        REQUIRE(s.size() == 2);
+    }
+
+    SECTION("std::map") {
+        std::map<SimpleSpec, std::string> m;
+        m[s1] = "x";
+        m[s2] = "y";
+        m[s3] = "z";
+        REQUIRE(m.size() == 2);
+    }
+
+    SECTION("std::unordered_set") {
+        std::unordered_set<SimpleSpec> us = {s1, s2, s3};
+        REQUIRE(us.size() == 2);
+    }
+
+    SECTION("std::unordered_map") {
+        std::unordered_map<SimpleSpec, int> um;
+        um[s1] = 10;
+        um[s2] = 20;
+        um[s3] = 30;
+        REQUIRE(um.size() == 2);
+    }
+}
+
+TEST_CASE("Container compatibility: mixed Version in map with Spec key", "[container][mixed]") {
+    // A plausible real-world use case: mapping specs to resolved versions
+    std::map<NpmSpec, Version> resolution;
+    resolution.emplace(NpmSpec("^1.0.0"), Version("1.5.2"));
+    resolution.emplace(NpmSpec("~2.3.0"), Version("2.3.7"));
+    resolution.emplace(NpmSpec("^1.0.0"), Version("1.9.0")); // duplicate key, no insert
+
+    REQUIRE(resolution.size() == 2);
+    REQUIRE(resolution.at(NpmSpec("^1.0.0")) == Version("1.5.2"));
 }
