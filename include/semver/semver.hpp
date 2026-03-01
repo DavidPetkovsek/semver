@@ -165,6 +165,11 @@ public:
     [[nodiscard]] std::vector<Version> filter(const std::vector<Version>& versions) const;
     [[nodiscard]] std::optional<Version> select(const std::vector<Version>& versions) const;
     [[nodiscard]] bool contains(const Version& v) const;
+
+    /// Return the lowest version that can satisfy this range, or nullopt
+    /// if no version can (e.g. an impossible range like ">4 <3").
+    [[nodiscard]] std::optional<Version> min_version() const;
+
     bool operator==(const BaseSpec& o) const;
     [[nodiscard]] std::size_t hash() const;
     [[nodiscard]] const std::string& str() const;
@@ -176,6 +181,10 @@ protected:
 
     std::string expression_;
     ClausePtr clause_;
+
+    /// Return true if every version matched by `other` is also matched
+    /// by `*this` — i.e. `other` is a subset of this range.
+    [[nodiscard]] bool subset_impl(const BaseSpec& other) const;
 };
 
 SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseSpec& s);
@@ -183,11 +192,19 @@ SEMVER_API extern std::ostream& operator<<(std::ostream& os, const semver::BaseS
 class SEMVER_API SimpleSpec : public BaseSpec {
 public:
     explicit SimpleSpec(std::string_view expression);
+
+    /// Return true if every version matched by `other` is also matched
+    /// by `*this` — i.e. `other` is a subset of this spec.
+    [[nodiscard]] bool subset(const SimpleSpec& other) const;
 };
 
 class SEMVER_API NpmSpec : public BaseSpec {
 public:
     explicit NpmSpec(std::string_view expression);
+
+    /// Return true if every version matched by `other` is also matched
+    /// by `*this` — i.e. `other` is a subset of this spec.
+    [[nodiscard]] bool subset(const NpmSpec& other) const;
 };
 
 // ============================================================================
@@ -195,6 +212,7 @@ public:
 // ============================================================================
 SEMVER_API extern std::weak_ordering compare(std::string_view v1, std::string_view v2);
 SEMVER_API extern bool match(std::string_view spec, std::string_view version);
+SEMVER_API extern bool npm_match(std::string_view spec, std::string_view version);
 SEMVER_API extern bool validate(std::string_view version_string);
 SEMVER_API extern bool attempt_parse(std::string_view version_string, Version &output) noexcept;
 SEMVER_API extern bool attempt_parse(std::string_view version_string, Version &output, std::string &reason) noexcept;

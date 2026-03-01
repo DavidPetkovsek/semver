@@ -68,3 +68,46 @@ A new free function `attempt_parse(string_view, Version&)` is provided as a non-
 ### Exceptions vs. error codes
 
 All parsing errors throw `std::invalid_argument`. There is no `noexcept` parsing mode other than `attempt_parse` and `Version::validate`.
+
+### NPM-inspired additions
+
+The upstream Python library does not provide equivalents for these. They are inspired by [npm/node-semver](https://github.com/npm/node-semver), based on commit [`5993c2e`](https://github.com/npm/node-semver/commit/5993c2e) (main, February 5, 2025 — version 7.7.4). `min_version` is defined directly on `BaseSpec`, so both `SimpleSpec` and `NpmSpec` inherit it. `subset` is exposed as a type-safe public method on each derived class individually (see below for rationale).
+
+#### `npm_match`
+
+A free function `npm_match(spec, version)` is provided as a convenience shorthand for `NpmSpec(spec).match(Version(version))`. This mirrors the existing `match()` free function (which uses `SimpleSpec`) and corresponds to node-semver's `satisfies(version, range)`.
+
+```cpp
+semver::npm_match("^1.0.0", "1.5.0");  // true
+```
+
+#### `NpmSpec::min_version` / `SimpleSpec::min_version`
+
+A member function `min_version()` on `BaseSpec` returns the lowest `Version` that can satisfy the spec, or `std::nullopt` for impossible ranges. This corresponds to node-semver's `minVersion(range)`.
+
+The upstream Python library has no equivalent. Users would have to generate candidate versions manually or use `filter`/`select` over a known set.
+
+```cpp
+NpmSpec("^1.2.3").min_version();     // Version("1.2.3")
+NpmSpec(">1.0.0").min_version();     // Version("1.0.1")
+NpmSpec(">4 <3").min_version();      // std::nullopt
+SimpleSpec(">=1.0.0,<2.0.0").min_version(); // Version("1.0.0")
+```
+
+#### `NpmSpec::subset` / `SimpleSpec::subset`
+
+A member function `subset(other)` returns `true` if every version matched by `other` is also matched by `*this`. This corresponds to node-semver's `subset(subRange, superRange)`.
+
+The upstream Python library has no equivalent.
+
+Cross-spec comparison (e.g. `SimpleSpec::subset(NpmSpec)`) is intentionally disallowed at the type level. `SimpleSpec` and `NpmSpec` produce clause trees with different prerelease policies (`NATURAL` vs `SAME_PATCH`), which means the same range expression can match different sets of versions depending on which parser was used. For example, `>1.2.3-alpha.3` parsed as a `SimpleSpec` will match `3.4.5-alpha.9` (different patch tuple, prerelease allowed under `NATURAL`), while the same expression parsed as an `NpmSpec` will reject it (prerelease blocked under `SAME_PATCH` because the tuple differs). Comparing clause trees built under different policies would produce silently incorrect results, so each class accepts only its own type.
+
+The shared implementation lives as `BaseSpec::subset_impl(const BaseSpec&)` in the protected section, so no logic is duplicated.
+
+```cpp
+NpmSpec(">=1.0.0").subset(NpmSpec("^1.2.3"));           // true  — ^1.2.3 ⊂ >=1.0.0
+NpmSpec("^1.2.3").subset(NpmSpec(">=1.0.0"));           // false — >=1.0.0 ⊄ ^1.2.3
+SimpleSpec(">=1.0.0").subset(SimpleSpec("^1.2.3"));     // true
+// SimpleSpec(">=1.0.0").subset(NpmSpec("^1.2.3"));     // compile error
+// NpmSpec("^1.2.3").subset(SimpleSpec(">=1.0.0"));     // compile error
+```
