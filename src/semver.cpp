@@ -735,6 +735,57 @@ static ClausePtr make_range(Range::Op op, Version target,
 // ============================================================================
 // BaseSpec implementation
 // ============================================================================
+static std::string normalize_spec_expression(std::string_view expr) {
+    std::string result;
+    result.reserve(expr.size());
+
+    // Trim leading whitespace
+    std::size_t start = 0;
+    while (start < expr.size() && (expr[start] == ' ' || expr[start] == '\t'))
+        ++start;
+
+    // Trim trailing whitespace
+    std::size_t end = expr.size();
+    while (end > start && (expr[end - 1] == ' ' || expr[end - 1] == '\t'))
+        --end;
+
+    bool in_space = false;
+    for (std::size_t i = start; i < end; ++i) {
+        char c = expr[i];
+        if (c == ' ' || c == '\t') {
+            in_space = true;
+            continue;
+        }
+
+        // At a non-space character — decide whether to emit the pending space
+        bool is_delim = (c == ',') ||
+                        (c == '|' && i + 1 < end && expr[i + 1] == '|');
+
+        // Drop space before a delimiter
+        if (is_delim) {
+            in_space = false;
+        }
+
+        // Drop space after a delimiter (check if last char(s) in result are a delimiter)
+        if (in_space && !result.empty()) {
+            char last = result.back();
+            bool after_delim = (last == ',') ||
+                               (last == '|' && result.size() >= 2 && result[result.size() - 2] == '|');
+            if (!after_delim)
+                result += ' ';
+            in_space = false;
+        }
+
+        result += c;
+        if (c == '|' && i + 1 < end && expr[i + 1] == '|') {
+            result += '|';
+            ++i;
+        }
+    }
+
+    return result;
+}
+
 BaseSpec::BaseSpec(std::string expr, ClausePtr c) : expression_(std::move(expr)), clause_(std::move(c)) {}
 
 bool BaseSpec::match(const Version& v) const { return clause_->match(v); }
@@ -754,6 +805,9 @@ std::optional<Version> BaseSpec::select(const std::vector<Version>& versions) co
 
 bool BaseSpec::contains(const Version& v) const { return match(v); }
 bool BaseSpec::operator==(const BaseSpec& o) const { return *clause_ == *o.clause_; }
+std::strong_ordering BaseSpec::operator<=>(const BaseSpec& o) const {
+    return expression_ <=> o.expression_;
+}
 std::size_t BaseSpec::hash() const { return clause_->hash_value(); }
 const std::string& BaseSpec::str() const { return expression_; }
 std::ostream& operator<<(std::ostream& os, const BaseSpec& s) { return os << s.expression_; }
@@ -874,8 +928,8 @@ static ClausePtr simple_parse_expression(std::string_view expression) {
 }
 
 SimpleSpec::SimpleSpec(std::string_view expression) {
-    expression_ = std::string(expression);
-    clause_ = simple_parse_expression(expression);
+    expression_ = normalize_spec_expression(expression);
+    clause_ = simple_parse_expression(expression_);
 }
 
 // ============================================================================
@@ -1054,8 +1108,8 @@ static ClausePtr npm_parse_expression(std::string_view expression) {
 }
 
 NpmSpec::NpmSpec(std::string_view expression) {
-    expression_ = std::string(expression);
-    clause_ = npm_parse_expression(expression);
+    expression_ = normalize_spec_expression(expression);
+    clause_ = npm_parse_expression(expression_);
 }
 
 // ---------------------------------------------------------------------------

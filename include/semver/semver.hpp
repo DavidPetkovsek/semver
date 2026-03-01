@@ -171,6 +171,7 @@ public:
     [[nodiscard]] std::optional<Version> min_version() const;
 
     bool operator==(const BaseSpec& o) const;
+    std::strong_ordering operator<=>(const BaseSpec& o) const;
     [[nodiscard]] std::size_t hash() const;
     [[nodiscard]] const std::string& str() const;
     friend SEMVER_API std::ostream& operator<<(std::ostream& os, const BaseSpec& s);
