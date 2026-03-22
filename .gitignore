@@ -1,2 +1,5 @@
 build/
+build-fuzz/
 .cache/
+tests/fuzz/corpus/
+tests/fuzz/live_*/

@@ -2,6 +2,7 @@
 
 [![Github releases](https://img.shields.io/github/release/DavidPetkovsek/semver.svg)](https://github.com/DavidPetkovsek/semver/releases)
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
+[![Fuzz](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml)
 
 A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion), with deprecated features removed. See [differences.md](./differences.md) to see what we changed and which commit we based this library off of.
 
@@ -21,15 +22,35 @@ Parse, compare, and match versions against flexible range specifications followi
 Build as a shared library:
 
 ```bash
-cmake -B build -DSEMVER_BUILD_TESTS=OFF
+cmake -B build
 cmake --build build
 ```
 
 Build as a static library:
 
 ```bash
-cmake -B build -DSEMVER_BUILD_TESTS=OFF -DSEMVER_BUILD_SHARED=OFF
+cmake -B build -DSEMVER_BUILD_SHARED=OFF
 cmake --build build
+```
+
+Build and run unit tests:
+
+```bash
+cmake -B build -DSEMVER_BUILD_TESTS=ON
+cmake --build build
+./build/tests/semver_tests
+```
+
+Build and run fuzzer:
+
+```bash
+cmake -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DSEMVER_BUILD_FUZZ=ON -DSEMVER_BUILD_SHARED=OFF
+cmake --build build-fuzz
+
+# Run the harnesses
+tests/fuzz/run.sh --parallel                    # run all, indefinitely until Ctrl-C
+tests/fuzz/run.sh --parallel -max_total_time=60 # 60 seconds per target
+tests/fuzz/run.sh --parallel -max_total_time=0 -runs=10000 # 10k runs each
 ```
 
 ### CMake
