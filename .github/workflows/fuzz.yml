@@ -1,0 +1,45 @@
+name: Fuzz
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    name: "libFuzzer smoke test"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Clang
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang
+
+      - name: Configure
+        run: >
+          cmake -B build-fuzz
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSEMVER_BUILD_FUZZ=ON
+          -DSEMVER_BUILD_SHARED=OFF
+
+      - name: Build
+        run: cmake --build build-fuzz --parallel $(nproc)
+
+      - name: Run fuzzers (30s each, parallel)
+        run: |
+          chmod +x tests/fuzz/run.sh
+          tests/fuzz/run.sh -p -max_total_time=30
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: |
+            tests/fuzz/live_*/crash-*
+            tests/fuzz/live_*/fuzz.log

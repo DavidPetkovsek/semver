@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # --------------------------------------------------------------------------
 
 project(semver
-    VERSION   0.3.0
+    VERSION   0.4.0
     LANGUAGES CXX
     DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
@@ -22,6 +22,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # --------------------------------------------------------------------------
 option(SEMVER_BUILD_SHARED   "Build semver as a shared library (OFF = static)" ON)
 option(SEMVER_BUILD_TESTS    "Build the Catch2 test suite" OFF)
+option(SEMVER_BUILD_FUZZ     "Build libFuzzer harnesses (requires Clang)" OFF)
 
 # --------------------------------------------------------------------------
 # Library target
@@ -76,6 +77,9 @@ endif()
 if(SEMVER_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+if(SEMVER_BUILD_FUZZ)
+    add_subdirectory(tests/fuzz)
 endif()
 
 # --------------------------------------------------------------------------
