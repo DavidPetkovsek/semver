@@ -3,6 +3,7 @@
 [![Github releases](https://img.shields.io/github/release/DavidPetkovsek/semver.svg)](https://github.com/DavidPetkovsek/semver/releases)
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
 [![Fuzz](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml)
+[![Sanitizers](https://github.com/DavidPetkovsek/semver/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/sanitizers.yml)
 
 A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion), with deprecated features removed. See [differences.md](./differences.md) to see what we changed and which commit we based this library off of.
 
@@ -52,6 +53,18 @@ tests/fuzz/run.sh --parallel                    # run all, indefinitely until Ct
 tests/fuzz/run.sh --parallel -max_total_time=60 # 60 seconds per target
 tests/fuzz/run.sh --parallel -max_total_time=0 -runs=10000 # 10k runs each
 ```
+
+Build and run sanitizers:
+
+```bash
+cmake -B build-san -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DSEMVER_BUILD_TESTS=ON -DSEMVER_BUILD_SANITIZERS=ON -DSEMVER_BUILD_SHARED=OFF
+cmake --build build-san
+
+ASAN_OPTIONS="detect_leaks=1:halt_on_error=1" \
+UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1" \
+build-san/tests/semver_tests
+```
+
 
 ### CMake
 

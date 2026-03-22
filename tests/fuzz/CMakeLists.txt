@@ -1,21 +1,20 @@
 # tests/fuzz/CMakeLists.txt — libFuzzer harnesses for semver
 #
-# libFuzzer is built into Clang. If your default compiler supports
-# -fsanitize=fuzzer, these targets will build automatically.
+# ASan + UBSan are applied globally by the root CMakeLists.txt when
+# SEMVER_BUILD_FUZZ is ON.  This file only adds the libFuzzer engine.
 #
 # Usage:
-#   cmake -B build -DSEMVER_BUILD_FUZZ=ON -DSEMVER_BUILD_SHARED=OFF
-#   cmake --build build
+#   cmake -B build-fuzz -DSEMVER_BUILD_FUZZ=ON -DSEMVER_BUILD_SHARED=OFF
+#   cmake --build build-fuzz
 #
 # If your default compiler is not Clang, configure with:
 #   cmake -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ \
 #       -DSEMVER_BUILD_FUZZ=ON -DSEMVER_BUILD_SHARED=OFF
 
-
 include(CheckCXXSourceCompiles)
 
 # --------------------------------------------------------------------------
-# Guard: verify the compiler actually supports the flags we need
+# Guard: verify the compiler supports -fsanitize=fuzzer
 # --------------------------------------------------------------------------
 set(CMAKE_REQUIRED_FLAGS "-fsanitize=fuzzer-no-link")
 check_cxx_source_compiles("int main() { return 0; }" SEMVER_HAS_SANITIZE_FUZZER)
@@ -34,19 +33,14 @@ if(SEMVER_BUILD_SHARED)
 endif()
 
 # --------------------------------------------------------------------------
-# Flags
-# --------------------------------------------------------------------------
-set(FUZZ_COMPILE_FLAGS -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer -g)
-set(FUZZ_LINK_FLAGS    -fsanitize=fuzzer,address,undefined)
-
-# --------------------------------------------------------------------------
 # Helper: define one fuzz target
 # --------------------------------------------------------------------------
 function(add_fuzz_target name source)
     add_executable(${name} ${source})
     target_link_libraries(${name} PRIVATE semver::semver)
-    target_compile_options(${name} PRIVATE ${FUZZ_COMPILE_FLAGS})
-    target_link_options(${name} PRIVATE ${FUZZ_LINK_FLAGS})
+    # sanitizer flags are already added via global
+    target_compile_options(${name} PRIVATE -fsanitize=fuzzer)
+    target_link_options(${name} PRIVATE -fsanitize=fuzzer)
 endfunction()
 
 # --------------------------------------------------------------------------
