@@ -12,7 +12,7 @@ jobs:
     name: "ASan + UBSan"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Clang
         run: |
@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y -qq clang
 
       - name: Cache Catch2
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build-san/_deps
           key: catch2-sanitizers-${{ hashFiles('tests/CMakeLists.txt') }}
