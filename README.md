@@ -53,6 +53,18 @@ tests/fuzz/run.sh --parallel -max_total_time=60 # 60 seconds per target
 tests/fuzz/run.sh --parallel -max_total_time=0 -runs=10000 # 10k runs each
 ```
 
+Build and run sanitizers:
+
+```bash
+cmake -B build-san -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DSEMVER_BUILD_TESTS=ON -DSEMVER_BUILD_SANITIZERS=ON -DSEMVER_BUILD_SHARED=OFF
+cmake --build build-san
+
+ASAN_OPTIONS="detect_leaks=1:halt_on_error=1" \
+UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1" \
+build-san/tests/semver_tests
+```
+
+
 ### CMake
 
 After installing, consume from your own project:

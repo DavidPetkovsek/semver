@@ -20,9 +20,36 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # --------------------------------------------------------------------------
 # Options
 # --------------------------------------------------------------------------
-option(SEMVER_BUILD_SHARED   "Build semver as a shared library (OFF = static)" ON)
-option(SEMVER_BUILD_TESTS    "Build the Catch2 test suite" OFF)
-option(SEMVER_BUILD_FUZZ     "Build libFuzzer harnesses (requires Clang)" OFF)
+option(SEMVER_BUILD_SHARED     "Build semver as a shared library (OFF = static)" ON)
+option(SEMVER_BUILD_TESTS      "Build the Catch2 test suite" OFF)
+option(SEMVER_BUILD_FUZZ       "Build libFuzzer harnesses (requires Clang)" OFF)
+option(SEMVER_BUILD_SANITIZERS "Build with ASan + UBSan (requires Clang)" OFF)
+
+# --------------------------------------------------------------------------
+# Sanitizers (ASan + UBSan) — applied globally when enabled
+# --------------------------------------------------------------------------
+if(SEMVER_BUILD_SANITIZERS OR SEMVER_BUILD_FUZZ)
+    if(SEMVER_BUILD_SHARED)
+        message(FATAL_ERROR
+            "SEMVER_BUILD_SANITIZERS requires a static build.\n"
+            "Add: -DSEMVER_BUILD_SHARED=OFF")
+    endif()
+
+    include(CheckCXXSourceCompiles)
+
+    set(CMAKE_REQUIRED_FLAGS "-fsanitize=address,undefined -fno-omit-frame-pointer")
+    check_cxx_source_compiles("int main() { return 0; }" SEMVER_HAS_SANITIZERS)
+    unset(CMAKE_REQUIRED_FLAGS)
+
+    if(NOT SEMVER_HAS_SANITIZERS)
+        message(FATAL_ERROR
+            "SEMVER_BUILD_SANITIZERS requires a compiler with -fsanitize=address,undefined support.\n"
+            "Try: -DCMAKE_CXX_COMPILER=clang++")
+    endif()
+
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
+endif()
 
 # --------------------------------------------------------------------------
 # Library target

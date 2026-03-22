@@ -1,0 +1,44 @@
+name: Sanitizers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sanitize:
+    name: "ASan + UBSan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Clang
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang
+
+      - name: Cache Catch2
+        uses: actions/cache@v4
+        with:
+          path: build-san/_deps
+          key: catch2-sanitizers-${{ hashFiles('tests/CMakeLists.txt') }}
+
+      - name: Configure
+        run: >
+          cmake -B build-san
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSEMVER_BUILD_TESTS=ON
+          -DSEMVER_BUILD_SHARED=OFF
+          -DSEMVER_BUILD_SANITIZERS=ON
+
+      - name: Build
+        run: cmake --build build-san --parallel $(nproc)
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: ./build-san/tests/semver_tests --colour-mode ansi
