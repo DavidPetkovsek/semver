@@ -3,6 +3,7 @@
 [![Github releases](https://img.shields.io/github/release/DavidPetkovsek/semver.svg)](https://github.com/DavidPetkovsek/semver/releases)
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
 [![Fuzz](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/fuzz.yml)
+[![Sanitizers](https://github.com/DavidPetkovsek/semver/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/sanitizers.yml)
 
 A C++20 semantic versioning library — a faithful translation of [python-semanticversion](https://github.com/rbarrois/python-semanticversion), with deprecated features removed. See [differences.md](./differences.md) to see what we changed and which commit we based this library off of.
 
