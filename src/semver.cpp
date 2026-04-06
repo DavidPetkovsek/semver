@@ -691,13 +691,13 @@ public:
 // --- Clause::and_with / or_with ---
 ClausePtr Clause::and_with(ClausePtr other) const {
     if (dynamic_cast<const Always*>(this) != nullptr) return other;
-    if (dynamic_cast<const Always*>(other.get()) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Never*>(this) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Always*>(other.get()) != nullptr) return shared_from_this();
+    if (dynamic_cast<const Never*>(this) != nullptr) return shared_from_this();
     if (dynamic_cast<const Never*>(other.get()) != nullptr) return other;
 
     std::vector<ClausePtr> merged;
     if (const auto* a = dynamic_cast<const AllOf*>(this)) merged = a->clauses;
-    else merged.push_back(const_cast<Clause*>(this)->shared_from_this());
+    else merged.push_back(shared_from_this());
 
     if (const auto* a = dynamic_cast<const AllOf*>(other.get()))
         merged.insert(merged.end(), a->clauses.begin(), a->clauses.end());
@@ -709,13 +709,13 @@ ClausePtr Clause::and_with(ClausePtr other) const {
 
 ClausePtr Clause::or_with(ClausePtr other) const {
     if (dynamic_cast<const Never*>(this) != nullptr) return other;
-    if (dynamic_cast<const Never*>(other.get()) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Always*>(this) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Never*>(other.get()) != nullptr) return shared_from_this();
+    if (dynamic_cast<const Always*>(this) != nullptr) return shared_from_this();
     if (dynamic_cast<const Always*>(other.get()) != nullptr) return other;
 
     std::vector<ClausePtr> merged;
     if (const auto* a = dynamic_cast<const AnyOf*>(this)) merged = a->clauses;
-    else merged.push_back(const_cast<Clause*>(this)->shared_from_this());
+    else merged.push_back(shared_from_this());
 
     if (const auto* a = dynamic_cast<const AnyOf*>(other.get()))
         merged.insert(merged.end(), a->clauses.begin(), a->clauses.end());
@@ -1078,7 +1078,7 @@ static ClausePtr npm_parse_expression(std::string_view expression) {
         std::vector<ClausePtr> prerelease_clauses;
         std::vector<ClausePtr> non_prerel_clauses;
         for (auto& cl : subclauses) {
-            auto* range = dynamic_cast<Range*>(cl.get());
+            const auto* range = dynamic_cast<const Range*>(cl.get());
             if (range != nullptr && !range->target.prerelease().empty()) {
                 if (range->op == Range::Op::GT || range->op == Range::Op::GTE) {
                     prerelease_clauses.push_back(std::make_shared<Range>(

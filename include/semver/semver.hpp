@@ -79,7 +79,7 @@ class NpmSpec;
 
 // Opaque clause pointer — concrete clause types are internal to the .cpp.
 class Clause;
-using ClausePtr = std::shared_ptr<Clause>;
+using ClausePtr = std::shared_ptr<const Clause>;
 
 // ============================================================================
 // Version
