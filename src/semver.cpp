@@ -848,8 +848,7 @@ static ClausePtr simple_parse_block(std::string_view expr) {
     } else {
         target = Version(*major_v, *minor_v, *patch_v,
                          prerel.empty() ? std::vector<std::string>{} : detail::split(prerel, '.'),
-                         has_build ? (build_str.empty() ? std::vector<std::string>{} : detail::split(build_str, '.'))
-                                   : std::vector<std::string>{});
+                         !has_build || build_str.empty() ? std::vector<std::string>{} : detail::split(build_str, '.'));
     }
 
     if ((!major_v || !minor_v || !patch_v) && (!prerel.empty() || has_build))
