@@ -9,8 +9,7 @@
 #include <vector>
 #include <semver/semver.hpp>
 
-namespace semver {
-namespace detail {
+namespace semver::detail {
 
 // ---------------------------------------------------------------------------
 // Character / string utilities
@@ -60,5 +59,4 @@ extern SpecParts parse_spec_block(std::string_view s, bool allow_v_prefix = fals
 // ---------------------------------------------------------------------------
 extern Identifier make_identifier(std::string_view part);
 
-} // namespace detail
-} // namespace semver
+} // namespace semver::detail

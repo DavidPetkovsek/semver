@@ -861,7 +861,9 @@ TEST_CASE("SimpleSpec: normalization and ordering", "[spec][simple][normalize]")
 // =========================================================================
 
 TEST_CASE("Container compatibility: Version", "[container][version]") {
-    Version v1("1.0.0"), v2("2.0.0"), v3("1.0.0");
+    Version v1{"1.0.0"};
+    Version v2{"2.0.0"};
+    Version v3{"1.0.0"};
 
     SECTION("std::vector") {
         std::vector<Version> vec = {v1, v2, v3};
@@ -901,7 +903,9 @@ TEST_CASE("Container compatibility: Version", "[container][version]") {
 }
 
 TEST_CASE("Container compatibility: NpmSpec", "[container][npm]") {
-    NpmSpec s1("^1.0.0"), s2("^2.0.0"), s3("^1.0.0");
+    NpmSpec s1{"^1.0.0"};
+    NpmSpec s2{"^2.0.0"};
+    NpmSpec s3{"^1.0.0"};
 
     SECTION("std::vector") {
         std::vector<NpmSpec> vec = {s1, s2, s3};
@@ -936,7 +940,9 @@ TEST_CASE("Container compatibility: NpmSpec", "[container][npm]") {
 }
 
 TEST_CASE("Container compatibility: SimpleSpec", "[container][simple]") {
-    SimpleSpec s1(">=1.0.0"), s2(">=2.0.0"), s3(">=1.0.0");
+    SimpleSpec s1{">=1.0.0"};
+    SimpleSpec s2{">=2.0.0"};
+    SimpleSpec s3{">=1.0.0"};
 
     SECTION("std::vector") {
         std::vector<SimpleSpec> vec = {s1, s2, s3};

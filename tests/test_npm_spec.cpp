@@ -27,13 +27,13 @@ struct NpmCase {
 };
 
 static void run_npm_cases(const std::vector<NpmCase>& cases) {
-    for (auto& [spec_text, matching, failing] : cases) {
+    for (const auto& [spec_text, matching, failing] : cases) {
         auto spec = NpmSpec(spec_text);
-        for (auto& ver : matching) {
+        for (const auto& ver : matching) {
             INFO("NpmSpec(\"" << spec_text << "\") should MATCH \"" << ver << "\"");
             REQUIRE(spec.match(Version(ver)));
         }
-        for (auto& ver : failing) {
+        for (const auto& ver : failing) {
             INFO("NpmSpec(\"" << spec_text << "\") should REJECT \"" << ver << "\"");
             REQUIRE_FALSE(spec.match(Version(ver)));
         }

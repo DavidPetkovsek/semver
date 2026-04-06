@@ -1,0 +1,157 @@
+# -----------------------------------------------------------------------------
+# Header filtering
+# Only diagnose issues in your own headers, not vcpkg/system headers.
+# Adjust the regex to match your project's include directory structure.
+# -----------------------------------------------------------------------------
+HeaderFilterRegex: '^((?!.*vcpkg|.*out/build).)*\.(hpp|h)$'
+FormatStyle: file
+
+# -----------------------------------------------------------------------------
+# Checks
+# -----------------------------------------------------------------------------
+Checks: "-*,bugprone-*,cppcoreguidelines-*,modernize-*,performance-*,readability-*,-bugprone-easily-swappable-parameters,-bugprone-forward-declaration-namespace,-bugprone-macro-parentheses,-cppcoreguidelines-avoid-magic-numbers,-cppcoreguidelines-avoid-do-while,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-modernize-use-trailing-return-type,-readability-magic-numbers,-readability-named-parameter,-readability-braces-around-statements"
+
+# -----------------------------------------------------------------------------
+# Treat naming violations as warnings only, everything else can be an error
+# if you want CI to be strict. Leave WarningsAsErrors empty for now so you
+# can triage the initial run without being flooded.
+# -----------------------------------------------------------------------------
+WarningsAsErrors: ''
+
+# -----------------------------------------------------------------------------
+# Check options
+# -----------------------------------------------------------------------------
+CheckOptions:
+
+  # ---------------------------------------------------------------------------
+  # Naming conventions
+  # PascalCase: types (classes, structs, enums, typedefs, template params)
+  # snake_case: functions, methods, variables, parameters, members
+  # Enum values: left flexible — UPPER_CASE or PascalCase both accepted
+  # ---------------------------------------------------------------------------
+
+  # Types
+  - key: readability-identifier-naming.ClassCase
+    value: PascalCase
+  - key: readability-identifier-naming.StructCase
+    value: PascalCase
+  - key: readability-identifier-naming.EnumCase
+    value: PascalCase
+  - key: readability-identifier-naming.TypedefCase
+    value: PascalCase
+  - key: readability-identifier-naming.TypeAliasCase
+    value: PascalCase
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: PascalCase
+  - key: readability-identifier-naming.TemplateTemplateParameterCase
+    value: PascalCase
+
+  # Enum values — allow either UPPER_CASE or CamelCase
+  # clang-tidy only supports one style per key; CamelCase is the safer
+  # default here. Remove this pair to leave enum values completely alone.
+  # - key: readability-identifier-naming.EnumConstantCase # enum values are skipped incase naming matters for matching to another system
+  #   value: CamelCase                                    # enum values are skipped incase naming matters for matching to another system
+
+  # Functions & methods
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.MethodCase
+    value: lower_case
+
+  # Variables & parameters
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.LocalVariableCase
+    value: lower_case
+  # - key: readability-identifier-naming.VariableIgnoredRegexp
+  #   value: '^(it|idx|id|i|j|k|n|w|x|y|z|dw|dx|dy|dz|dt|ok|fn|cb|op|ptr|tmp|err|ret|buf|len|pos|end|cur|min|max)$'
+
+  # Disables length checks for local variables and parameters
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: '0'
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: '0'
+  # Disables length checks for loop counters and exceptions
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: '0'
+  - key: readability-identifier-length.MinimumExceptionNameLength
+    value: '0'
+
+  # Member variables — snake_case with trailing underscore is common for
+  # private members; remove the Suffix line if you don't want that.
+  - key: readability-identifier-naming.MemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: '_'
+  - key: readability-identifier-naming.ProtectedMemberSuffix
+    value: '_'
+
+  # Namespaces
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+
+  # Constants — global/namespace scope: UPPER_CASE, everything else: lower_case
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstexprVariableCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.LocalConstantCase
+    value: lower_case
+  - key: readability-identifier-naming.LocalConstexprVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantMemberCase
+    value: lower_case
+
+  # ---------------------------------------------------------------------------
+  # Uninitialized members
+  # ---------------------------------------------------------------------------
+  - key: cppcoreguidelines-pro-type-member-init.IgnoreArrays
+    value: 'false'
+
+  # ---------------------------------------------------------------------------
+  # Owning raw pointers — flag new/delete and suggest smart pointers
+  # ---------------------------------------------------------------------------
+  - key: cppcoreguidelines-owning-memory.LegacyResourceProducers
+    value: '::malloc;::aligned_alloc;::realloc;::calloc;::fopen;::freopen;::tmpfile'
+  - key: cppcoreguidelines-owning-memory.LegacyResourceConsumers
+    value: '::free;::realloc;::freopen;::fclose'
+
+  # ---------------------------------------------------------------------------
+  # Implicit conversions / narrowing
+  # ---------------------------------------------------------------------------
+  - key: bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion
+    value: 'true'
+  - key: bugprone-narrowing-conversions.WarnOnEquivalentBitWidth
+    value: 'true'
+
+  # ---------------------------------------------------------------------------
+  # modernize
+  # ---------------------------------------------------------------------------
+  - key: modernize-use-default-member-init.UseAssignment
+    value: 'false'
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: modernize-pass-by-value.IncludeStyle
+    value: llvm
+  - key: modernize-use-braced-init-list.StrictMode
+    value: true
+
+  # ---------------------------------------------------------------------------
+  # readability
+  # ---------------------------------------------------------------------------
+  - key: readability-function-cognitive-complexity.Threshold
+    value: '25'
+  - key: readability-function-size.LineThreshold
+    value: '80'
+  - key: readability-function-size.StatementThreshold
+    value: '50'
+  - key: readability-function-size.BranchThreshold
+    value: '10'
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '2'

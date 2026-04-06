@@ -253,7 +253,7 @@ namespace detail {
 // ============================================================================
 
 static void validate_identifiers(const std::vector<std::string>& ids, bool allow_leading_zeroes) {
-    for (auto& item : ids) {
+    for (const auto& item : ids) {
         if (item.empty())
             throw std::invalid_argument("Invalid empty identifier in: " + detail::join(ids, "."));
         if (!allow_leading_zeroes && item.size() > 1 && item[0] == '0' && detail::is_digit_string(item))
@@ -350,40 +350,40 @@ std::size_t Version::hash() const {
     auto combine = [&](std::size_t v) { h ^= v + 0x9e3779b9 + (h << 6) + (h >> 2); };
     combine(std::hash<int>{}(minor_));
     combine(std::hash<int>{}(patch_));
-    for (auto& s : prerelease_) combine(std::hash<std::string>{}(s));
-    for (auto& s : build_) combine(std::hash<std::string>{}(s));
+    for (const auto& s : prerelease_) combine(std::hash<std::string>{}(s));
+    for (const auto& s : build_) combine(std::hash<std::string>{}(s));
     return h;
 }
 
 Version Version::next_major() const {
     if (!prerelease_.empty() && minor_ == 0 && patch_ == 0)
-        return Version(major_, 0, 0);
-    return Version(major_ + 1, 0, 0);
+        return Version{major_, 0, 0};
+    return Version{major_ + 1, 0, 0};
 }
 
 Version Version::next_minor() const {
     if (!prerelease_.empty() && patch_ == 0)
-        return Version(major_, minor_, 0);
-    return Version(major_, minor_ + 1, 0);
+        return Version{major_, minor_, 0};
+    return Version{major_, minor_ + 1, 0};
 }
 
 Version Version::next_patch() const {
     if (!prerelease_.empty())
-        return Version(major_, minor_, patch_);
-    return Version(major_, minor_, patch_ + 1);
+        return Version{major_, minor_, patch_};
+    return Version{major_, minor_, patch_ + 1};
 }
 
 Version Version::truncate(std::string_view level) const {
     if (level == "build")
-        return Version(major_, minor_, patch_, prerelease_, build_);
+        return Version{major_, minor_, patch_, prerelease_, build_};
     if (level == "prerelease")
-        return Version(major_, minor_, patch_, prerelease_);
+        return Version{major_, minor_, patch_, prerelease_};
     if (level == "patch")
-        return Version(major_, minor_, patch_);
+        return Version{major_, minor_, patch_};
     if (level == "minor")
-        return Version(major_, minor_, 0);
+        return Version{major_, minor_, 0};
     if (level == "major")
-        return Version(major_, 0, 0);
+        return Version{major_, 0, 0};
     throw std::invalid_argument("Invalid truncation level: " + std::string(level));
 }
 
@@ -437,7 +437,8 @@ Version Version::coerce(std::string_view version_string) {
     }
     rest = cleaned;
 
-    std::string prerelease_str, build_str;
+    std::string prerelease_str;
+    std::string build_str;
     if (rest[0] == '+') {
         build_str = rest.substr(1);
     } else if (rest[0] == '.') {
@@ -486,15 +487,15 @@ bool Version::validate(std::string_view version_string) {
 void Version::rebuild_keys() {
     auto prerelease_key = build_prerelease_key();
     auto build_key = build_build_key();
-    cmp_key_ = {major_, minor_, patch_, prerelease_key};
-    sort_key_ = {major_, minor_, patch_, prerelease_key, build_key};
+    cmp_key_ = {.major=major_, .minor=minor_, .patch=patch_, .prerelease=prerelease_key};
+    sort_key_ = {.major=major_, .minor=minor_, .patch=patch_, .prerelease=prerelease_key, .build=build_key};
 }
 
 std::vector<Identifier> Version::build_prerelease_key() const {
     if (!prerelease_.empty()) {
         std::vector<Identifier> key;
         key.reserve(prerelease_.size());
-        for (auto& p : prerelease_)
+        for (const auto& p : prerelease_)
             key.push_back(detail::make_identifier(p));
         return key;
     }
@@ -503,8 +504,9 @@ std::vector<Identifier> Version::build_prerelease_key() const {
 
 std::vector<Identifier> Version::build_build_key() const {
     std::vector<Identifier> key;
-    for (auto& b : build_)
-            key.push_back(detail::make_identifier(b));
+    key.reserve(build_.size());
+    for (const auto& b : build_)
+        key.push_back(detail::make_identifier(b));
     return key;
 }
 
@@ -516,7 +518,7 @@ void Version::validate_identifiers() const {
 // ============================================================================
 // Clause hierarchy — entirely internal to this translation unit
 // ============================================================================
-class Clause : public std::enable_shared_from_this<Clause> {
+class Clause : public std::enable_shared_from_this<Clause> { // NOLINT(cppcoreguidelines-special-member-functions)
 public:
     virtual ~Clause() = default;
     [[nodiscard]] virtual bool match(const Version& version) const = 0;
@@ -551,9 +553,9 @@ public:
 // --- Range ---
 class Range : public Clause {
 public:
-    enum class Op { EQ, GT, GTE, LT, LTE, NEQ };
-    enum class PrePolicy { ALWAYS, NATURAL, SAME_PATCH };
-    enum class BuildPolicy { IMPLICIT, STRICT };
+    enum class Op: uint8_t { EQ, GT, GTE, LT, LTE, NEQ };
+    enum class PrePolicy: uint8_t { ALWAYS, NATURAL, SAME_PATCH };
+    enum class BuildPolicy: uint8_t { IMPLICIT, STRICT };
 
     Op op;
     Version target;
@@ -612,7 +614,7 @@ public:
 }
 
     bool operator==(const Clause& o) const override {
-    if (auto* r = dynamic_cast<const Range*>(&o))
+    if (const auto* r = dynamic_cast<const Range*>(&o))
         return op == r->op && target == r->target && pre_policy == r->pre_policy;
     return false;
 }
@@ -632,15 +634,15 @@ public:
     AllOf(std::initializer_list<ClausePtr> c) : clauses(c) {}
 
     bool match(const Version& version) const override {
-    return std::all_of(clauses.begin(), clauses.end(), [&](auto& c) { return c->match(version); });
-}
+        return std::ranges::all_of(clauses, [&](const auto& c) { return c->match(version); });
+    }
 
     bool operator==(const Clause& o) const override {
-    if (auto* a = dynamic_cast<const AllOf*>(&o)) {
+    if (const auto* a = dynamic_cast<const AllOf*>(&o)) {
         if (clauses.size() != a->clauses.size()) return false;
-        for (auto& c : clauses) {
+        for (const auto& c : clauses) {
             bool found = false;
-            for (auto& oc : a->clauses) if (*c == *oc) { found = true; break; }
+            for (const auto& oc : a->clauses) if (*c == *oc) { found = true; break; }
             if (!found) return false;
         }
         return true;
@@ -650,7 +652,7 @@ public:
 
     std::size_t hash_value() const override {
     std::size_t h = 0xA110F;
-    for (auto& c : clauses) h ^= c->hash_value() + 0x9e3779b9 + (h << 6) + (h >> 2);
+    for (const auto& c : clauses) h ^= c->hash_value() + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
 }
 };
@@ -663,15 +665,15 @@ public:
     AnyOf(std::initializer_list<ClausePtr> c) : clauses(c) {}
 
     bool match(const Version& version) const override {
-    return std::any_of(clauses.begin(), clauses.end(), [&](auto& c) { return c->match(version); });
-}
+        return std::ranges::any_of(clauses, [&](auto& c) { return c->match(version); });
+    }
 
     bool operator==(const Clause& o) const override {
-    if (auto* a = dynamic_cast<const AnyOf*>(&o)) {
+    if (const auto* a = dynamic_cast<const AnyOf*>(&o)) {
         if (clauses.size() != a->clauses.size()) return false;
-        for (auto& c : clauses) {
+        for (const auto& c : clauses) {
             bool found = false;
-            for (auto& oc : a->clauses) if (*c == *oc) { found = true; break; }
+            for (const auto& oc : a->clauses) if (*c == *oc) { found = true; break; }
             if (!found) return false;
         }
         return true;
@@ -681,23 +683,23 @@ public:
 
     std::size_t hash_value() const override {
     std::size_t h = 0xA0F0F;
-    for (auto& c : clauses) h ^= c->hash_value() + 0x9e3779b9 + (h << 6) + (h >> 2);
+    for (const auto& c : clauses) h ^= c->hash_value() + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
 }
 };
 
 // --- Clause::and_with / or_with ---
 ClausePtr Clause::and_with(ClausePtr other) const {
-    if (dynamic_cast<const Always*>(this)) return other;
-    if (dynamic_cast<const Always*>(other.get())) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Never*>(this)) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Never*>(other.get())) return other;
+    if (dynamic_cast<const Always*>(this) != nullptr) return other;
+    if (dynamic_cast<const Always*>(other.get()) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Never*>(this) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Never*>(other.get()) != nullptr) return other;
 
     std::vector<ClausePtr> merged;
-    if (auto* a = dynamic_cast<const AllOf*>(this)) merged = a->clauses;
+    if (const auto* a = dynamic_cast<const AllOf*>(this)) merged = a->clauses;
     else merged.push_back(const_cast<Clause*>(this)->shared_from_this());
 
-    if (auto* a = dynamic_cast<const AllOf*>(other.get()))
+    if (const auto* a = dynamic_cast<const AllOf*>(other.get()))
         merged.insert(merged.end(), a->clauses.begin(), a->clauses.end());
     else
         merged.push_back(other);
@@ -706,16 +708,16 @@ ClausePtr Clause::and_with(ClausePtr other) const {
 }
 
 ClausePtr Clause::or_with(ClausePtr other) const {
-    if (dynamic_cast<const Never*>(this)) return other;
-    if (dynamic_cast<const Never*>(other.get())) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Always*>(this)) return const_cast<Clause*>(this)->shared_from_this();
-    if (dynamic_cast<const Always*>(other.get())) return other;
+    if (dynamic_cast<const Never*>(this) != nullptr) return other;
+    if (dynamic_cast<const Never*>(other.get()) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Always*>(this) != nullptr) return const_cast<Clause*>(this)->shared_from_this();
+    if (dynamic_cast<const Always*>(other.get()) != nullptr) return other;
 
     std::vector<ClausePtr> merged;
-    if (auto* a = dynamic_cast<const AnyOf*>(this)) merged = a->clauses;
+    if (const auto* a = dynamic_cast<const AnyOf*>(this)) merged = a->clauses;
     else merged.push_back(const_cast<Clause*>(this)->shared_from_this());
 
-    if (auto* a = dynamic_cast<const AnyOf*>(other.get()))
+    if (const auto* a = dynamic_cast<const AnyOf*>(other.get()))
         merged.insert(merged.end(), a->clauses.begin(), a->clauses.end());
     else
         merged.push_back(other);
@@ -792,7 +794,7 @@ bool BaseSpec::match(const Version& v) const { return clause_->match(v); }
 
 std::vector<Version> BaseSpec::filter(const std::vector<Version>& versions) const {
     std::vector<Version> result;
-    for (auto& v : versions)
+    for (const auto& v : versions)
         if (match(v)) result.push_back(v);
     return result;
 }
@@ -800,7 +802,7 @@ std::vector<Version> BaseSpec::filter(const std::vector<Version>& versions) cons
 std::optional<Version> BaseSpec::select(const std::vector<Version>& versions) const {
     auto filtered = filter(versions);
     if (filtered.empty()) return std::nullopt;
-    return *std::max_element(filtered.begin(), filtered.end());
+    return *std::ranges::max_element(filtered);
 }
 
 bool BaseSpec::contains(const Version& v) const { return match(v); }
@@ -1077,7 +1079,7 @@ static ClausePtr npm_parse_expression(std::string_view expression) {
         std::vector<ClausePtr> non_prerel_clauses;
         for (auto& cl : subclauses) {
             auto* range = dynamic_cast<Range*>(cl.get());
-            if (range && !range->target.prerelease().empty()) {
+            if (range != nullptr && !range->target.prerelease().empty()) {
                 if (range->op == Range::Op::GT || range->op == Range::Op::GTE) {
                     prerelease_clauses.push_back(std::make_shared<Range>(
                         Range::Op::LT,
@@ -1120,13 +1122,13 @@ NpmSpec::NpmSpec(std::string_view expression) {
 // bound implied by > or >= comparators.  For an OR (AnyOf) take the min
 // across branches.  Returns nullopt for impossible / never ranges.
 static std::optional<Version> min_version_from_clause(const Clause* cl) {
-    if (dynamic_cast<const Never*>(cl))
+    if (dynamic_cast<const Never*>(cl) != nullptr)
         return std::nullopt;
 
-    if (dynamic_cast<const Always*>(cl))
+    if (dynamic_cast<const Always*>(cl) != nullptr)
         return Version(0, 0, 0);
 
-    if (auto* r = dynamic_cast<const Range*>(cl)) {
+    if (const auto* r = dynamic_cast<const Range*>(cl)) {
         switch (r->op) {
         case Range::Op::EQ:
         case Range::Op::GTE:
@@ -1135,29 +1137,27 @@ static std::optional<Version> min_version_from_clause(const Clause* cl) {
             // >X.Y.Z  →  X.Y.(Z+1)  if no prerelease
             //          →  X.Y.Z-pre.0 if prerelease present
             auto v = r->target;
-            if (v.prerelease().empty()) {
+            if (v.prerelease().empty())
                 return Version(v.major(), v.minor(), v.patch() + 1);
-            } else {
-                auto pr = v.prerelease();
-                pr.push_back("0");
-                return Version(v.major(), v.minor(), v.patch(), std::move(pr));
-            }
+            auto pr = v.prerelease();
+            pr.emplace_back("0");
+            return Version(v.major(), v.minor(), v.patch(), std::move(pr));
         }
         case Range::Op::LT:
         case Range::Op::LTE:
             // Upper bounds don't set a min; the min is 0.0.0 or 0.0.0-0
             // (the caller / AllOf branch handles combining with lower bounds).
-            return std::nullopt;
+
         case Range::Op::NEQ:
             return std::nullopt;
         }
         return std::nullopt;
     }
 
-    if (auto* all = dynamic_cast<const AllOf*>(cl)) {
+    if (const auto* all = dynamic_cast<const AllOf*>(cl)) {
         // The minimum of an AND-set is the *highest* lower bound.
         std::optional<Version> best;
-        for (auto& c : all->clauses) {
+        for (const auto& c : all->clauses) {
             auto m = min_version_from_clause(c.get());
             if (m.has_value()) {
                 if (!best.has_value() || *m > *best)
@@ -1167,10 +1167,10 @@ static std::optional<Version> min_version_from_clause(const Clause* cl) {
         return best; // may still be nullopt if only upper-bound clauses
     }
 
-    if (auto* any = dynamic_cast<const AnyOf*>(cl)) {
+    if (const auto* any = dynamic_cast<const AnyOf*>(cl)) {
         // The minimum across OR branches is the *lowest* candidate.
         std::optional<Version> best;
-        for (auto& c : any->clauses) {
+        for (const auto& c : any->clauses) {
             auto m = min_version_from_clause(c.get());
             if (m.has_value()) {
                 if (!best.has_value() || *m < *best)
@@ -1246,25 +1246,25 @@ static SimpleBounds extract_bounds(const Clause* cl) {
         }
     };
 
-    if (dynamic_cast<const Never*>(cl)) {
+    if (dynamic_cast<const Never*>(cl) != nullptr) {
         b.is_null_set = true;
         return b;
     }
-    if (dynamic_cast<const Always*>(cl)) {
+    if (dynamic_cast<const Always*>(cl) != nullptr) {
         return b; // no bounds = match everything
     }
-    if (auto* r = dynamic_cast<const Range*>(cl)) {
+    if (const auto* r = dynamic_cast<const Range*>(cl)) {
         process_range(r);
-    } else if (auto* all = dynamic_cast<const AllOf*>(cl)) {
-        for (auto& c : all->clauses) {
-            if (auto* r = dynamic_cast<const Range*>(c.get()))
+    } else if (const auto* all = dynamic_cast<const AllOf*>(cl)) {
+        for (const auto& c : all->clauses) {
+            if (const auto* r = dynamic_cast<const Range*>(c.get()))
                 process_range(r);
             // nested AllOf/AnyOf inside an AllOf is unusual but handle gracefully
         }
     }
 
     // Detect null sets: GT >= LT, or GT > LT, etc.
-    if (b.gt && b.lt) {
+    if (b.gt != nullptr && b.lt != nullptr) {
         if (b.gt->target > b.lt->target) {
             b.is_null_set = true;
         } else if (b.gt->target == b.lt->target) {
@@ -1284,9 +1284,10 @@ static SimpleBounds extract_bounds(const Clause* cl) {
 // Collect the "simple" (AND) branches of a parsed clause.
 // An AnyOf at the top level gives multiple branches; anything else is one.
 static std::vector<const Clause*> collect_simple_branches(const Clause* cl) {
-    if (auto* any = dynamic_cast<const AnyOf*>(cl)) {
+    if (const auto* any = dynamic_cast<const AnyOf*>(cl)) {
         std::vector<const Clause*> out;
-        for (auto& c : any->clauses)
+        out.reserve(any->clauses.size());
+        for (const auto& c : any->clauses)
             out.push_back(c.get());
         return out;
     }
@@ -1307,14 +1308,14 @@ static std::optional<bool> is_subset_simple(const Clause* sub_cl,
     // If sub has EQ pins, each must satisfy the dom.
     if (!sub.eqs.empty()) {
         // Check EQ is consistent with sub's own GT/LT
-        auto& eq_ver = sub.eqs[0]->target;
-        if (sub.gt) {
+        const auto& eq_ver = sub.eqs[0]->target;
+        if (sub.gt != nullptr) {
             bool ok = (sub.gt->op == Range::Op::GTE)
                           ? eq_ver >= sub.gt->target
                           : eq_ver > sub.gt->target;
             if (!ok) return std::nullopt; // null set
         }
-        if (sub.lt) {
+        if (sub.lt != nullptr) {
             bool ok = (sub.lt->op == Range::Op::LTE)
                           ? eq_ver <= sub.lt->target
                           : eq_ver < sub.lt->target;
@@ -1327,18 +1328,18 @@ static std::optional<bool> is_subset_simple(const Clause* sub_cl,
 
     // If sub's GT and LT bounds collapse to a single point, treat it as EQ.
     // e.g. >=1.0.0 <=1.0.0  is effectively  =1.0.0
-    if (sub.gt && sub.lt && sub.eqs.empty()
+    if (sub.gt != nullptr && sub.lt != nullptr && sub.eqs.empty()
         && sub.gt->op == Range::Op::GTE && sub.lt->op == Range::Op::LTE
         && sub.gt->target == sub.lt->target) {
         return dom_cl->match(sub.gt->target);
     }
 
     // dom has EQ constraints but sub doesn't: sub is wider.
-    if (!dom.eqs.empty() && (sub.gt || sub.lt))
+    if (!dom.eqs.empty() && (sub.gt != nullptr || sub.lt != nullptr))
         return false;
 
     // Check GT/GTE bound: sub's lower bound must be >= dom's lower bound.
-    if (sub.gt && dom.gt) {
+    if (sub.gt != nullptr && dom.gt != nullptr) {
         if (sub.gt->target < dom.gt->target)
             return false;
         if (sub.gt->target == dom.gt->target) {
@@ -1346,32 +1347,32 @@ static std::optional<bool> is_subset_simple(const Clause* sub_cl,
             if (dom.gt->op == Range::Op::GT && sub.gt->op == Range::Op::GTE)
                 return false;
         }
-    } else if (!sub.gt && dom.gt) {
+    } else if (sub.gt == nullptr && dom.gt != nullptr) {
         // sub has no lower bound but dom does — sub is wider.
         return false;
     }
     // sub has GT, dom doesn't — ok, dom is wider at the bottom.
 
     // Check LT/LTE bound: sub's upper bound must be <= dom's upper bound.
-    if (sub.lt && dom.lt) {
+    if (sub.lt != nullptr && dom.lt != nullptr) {
         if (sub.lt->target > dom.lt->target)
             return false;
         if (sub.lt->target == dom.lt->target) {
             if (dom.lt->op == Range::Op::LT && sub.lt->op == Range::Op::LTE)
                 return false;
         }
-    } else if (!sub.lt && dom.lt) {
+    } else if (sub.lt == nullptr && dom.lt != nullptr) {
         return false;
     }
 
     // If sub has a GT bound, check it satisfies the dom clause.
-    if (sub.gt && sub.gt->op == Range::Op::GTE) {
+    if (sub.gt != nullptr && sub.gt->op == Range::Op::GTE) {
         if (!dom_cl->match(sub.gt->target))
             return false;
     }
 
     // If sub has an LT bound, check it satisfies the dom clause.
-    if (sub.lt && sub.lt->op == Range::Op::LTE) {
+    if (sub.lt != nullptr && sub.lt->op == Range::Op::LTE) {
         if (!dom_cl->match(sub.lt->target))
             return false;
     }
@@ -1391,9 +1392,9 @@ bool BaseSpec::subset_impl(const BaseSpec& other) const {
 
     bool saw_non_null = false;
 
-    for (auto* sub_cl : sub_branches) {
+    for (const auto* sub_cl : sub_branches) {
         bool matched = false;
-        for (auto* dom_cl : dom_branches) {
+        for (const auto* dom_cl : dom_branches) {
             auto result = is_subset_simple(sub_cl, dom_cl);
             if (!result.has_value()) {
                 // null set — skip, doesn't count as non-null

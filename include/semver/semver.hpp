@@ -56,14 +56,14 @@ SEMVER_API extern bool operator==(const Identifier& a, const Identifier& b);
 SEMVER_API extern std::strong_ordering operator<=>(const Identifier& a, const Identifier& b);
 
 struct SEMVER_API CmpKey {
-    int major, minor, patch;
+    int major{0}, minor{0}, patch{0};
     std::vector<Identifier> prerelease;
     auto operator<=>(const CmpKey&) const = default;
     bool operator==(const CmpKey&) const = default;
 };
 
 struct SEMVER_API SortKey {
-    int major, minor, patch;
+    int major{0}, minor{0}, patch{0};
     std::vector<Identifier> prerelease;
     std::vector<Identifier> build;
     auto operator<=>(const SortKey&) const = default;
@@ -132,8 +132,8 @@ private:
     int major_{};
     int minor_{};
     int patch_{};
-    std::vector<std::string> prerelease_{};
-    std::vector<std::string> build_{};
+    std::vector<std::string> prerelease_;
+    std::vector<std::string> build_;
 
     CmpKey cmp_key_;
     SortKey sort_key_;
