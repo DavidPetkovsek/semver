@@ -20,8 +20,8 @@ using semver::NpmSpec;
 using Vs = std::vector<std::string>;
 
 // Helper: check that constructing a Version from a string throws.
-#define REQUIRE_INVALID_VERSION(str) REQUIRE_THROWS_AS(Version(str), std::invalid_argument)
-#define REQUIRE_VALID_VERSION(str)   REQUIRE_NOTHROW(Version(str))
+#define REQUIRE_INVALID_VERSION(str) REQUIRE_THROWS_AS(Version(str), std::invalid_argument) // NOLINT(cppcoreguidelines-macro-usage)
+#define REQUIRE_VALID_VERSION(str)   REQUIRE_NOTHROW(Version(str)) // NOLINT(cppcoreguidelines-macro-usage)
 
 // ==========================================================================
 // test_spec.py — FormatTests
@@ -155,7 +155,7 @@ TEST_CASE("TopLevel: validate valid", "[base][validate]") {
         "1.1.3-rc42.3-14-15.24+build.2012-04-13.223",
         "1.1.3+build.2012-04-13.HUY.alpha-12.1",
     };
-    for (auto& v : valids) {
+    for (const auto& v : valids) {
         INFO("version: " << v);
         REQUIRE(semver::validate(v));
     }
@@ -165,7 +165,7 @@ TEST_CASE("TopLevel: validate invalid", "[base][validate]") {
     const std::vector<std::string> invalids = {
         "1", "v1", "1.2.3.4", "1.2", "1.2a3", "1.2.3a4", "v12.34.5", "1.2.3+4+5",
     };
-    for (auto& v : invalids) {
+    for (const auto& v : invalids) {
         INFO("version: " << v);
         REQUIRE_FALSE(semver::validate(v));
     }
