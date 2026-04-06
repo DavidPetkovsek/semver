@@ -7,10 +7,10 @@
 
 #include "semver/semver.hpp"
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) { // NOLINT(readability-identifier-naming)
     if (size > 512) return 0;
 
-    std::string_view input(reinterpret_cast<const char*>(data), size);
+    std::string_view input(reinterpret_cast<const char*>(data), size); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 
     try {
         semver::SimpleSpec spec(input);

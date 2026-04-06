@@ -5,3 +5,26 @@ Diagnostics:
   ClangTidy:
     Add: []
     Remove: []
+
+---
+
+If:
+  PathMatch:  [tests/.*]
+
+Diagnostics:
+  ClangTidy:
+    Add: []
+    Remove:
+      - readability-function-cognitive-complexity
+      - readability-function-size
+
+---
+
+If:
+  PathMatch:  [tests/fuzz/.*]
+
+Diagnostics:
+  ClangTidy:
+    Add: []
+    Remove:
+      - bugprone-empty-catch
