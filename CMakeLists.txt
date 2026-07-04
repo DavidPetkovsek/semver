@@ -102,11 +102,6 @@ if(SEMVER_BUILD_SHARED)
     endif()
 endif()
 
-# On Windows, export all symbols for shared builds.
-if(SEMVER_BUILD_SHARED AND WIN32)
-    set_target_properties(semver PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
-
 # --------------------------------------------------------------------------
 # Tests
 # --------------------------------------------------------------------------
