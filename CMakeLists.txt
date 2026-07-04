@@ -118,7 +118,7 @@ include(CMakePackageConfigHelpers)
 # Install the header.
 install(
     FILES
-        include/semver/semver.hpp
+        include/dpetkov-semver/semver.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dpetkov-semver
 )
 
