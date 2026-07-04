@@ -1,4 +1,4 @@
-# semver
+# dpetkov-semver
 
 [![Github releases](https://img.shields.io/github/release/DavidPetkovsek/semver.svg)](https://github.com/DavidPetkovsek/semver/releases)
 [![CI](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidPetkovsek/semver/actions/workflows/ci.yml)
@@ -71,14 +71,14 @@ build-san/tests/semver_tests
 After installing, consume from your own project:
 
 ```cmake
-find_package(semver REQUIRED)
-target_link_libraries(myapp PRIVATE semver::semver)
+find_package(dpetkov-semver REQUIRED)
+target_link_libraries(myapp PRIVATE dpetkov-semver::semver)
 ```
 
 ## Usage
 
 ```cpp
-#include <semver/semver.hpp>
+#include <dpetkov-semver/semver.hpp>
 ```
 
 All types live in the `semver` namespace.

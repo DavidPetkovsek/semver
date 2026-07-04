@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <semver/semver.hpp>
+#include <dpetkov-semver/semver.hpp>
 
 namespace semver {
 namespace detail {
