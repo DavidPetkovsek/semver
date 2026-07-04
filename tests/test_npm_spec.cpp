@@ -12,7 +12,7 @@
 #include <vector>
 #include <optional>
 
-#include "semver/semver.hpp"
+#include "dpetkov-semver/semver.hpp"
 
 using semver::Version;
 using semver::NpmSpec;

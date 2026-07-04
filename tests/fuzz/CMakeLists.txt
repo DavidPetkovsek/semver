@@ -37,7 +37,7 @@ endif()
 # --------------------------------------------------------------------------
 function(add_fuzz_target name source)
     add_executable(${name} ${source})
-    target_link_libraries(${name} PRIVATE semver::semver)
+    target_link_libraries(${name} PRIVATE dpetkov-semver::semver)
     # sanitizer flags are already added via global
     target_compile_options(${name} PRIVATE -fsanitize=fuzzer)
     target_link_options(${name} PRIVATE -fsanitize=fuzzer)

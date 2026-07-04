@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "semver/semver.hpp"
+#include "dpetkov-semver/semver.hpp"
 
 using semver::Version;
 using semver::NpmSpec;

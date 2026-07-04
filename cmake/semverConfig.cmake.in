@@ -1,5 +1,5 @@
 @PACKAGE_INIT@
 
-include("${CMAKE_CURRENT_LIST_DIR}/semverTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/dpetkov-semverTargets.cmake")
 
-check_required_components(semver)
+check_required_components(dpetkov-semver)

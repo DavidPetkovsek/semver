@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # --------------------------------------------------------------------------
 
 project(semver
-    VERSION   0.4.0
+    VERSION   0.4.1
     LANGUAGES CXX
     DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
@@ -65,37 +65,41 @@ if(SEMVER_BUILD_SHARED)
 else()
     add_library(semver STATIC src/semver.cpp)
 endif()
-add_library(semver::semver ALIAS semver)
+# Local alias (nice for internal use)
+add_library(dpetkov-semver::semver ALIAS semver)
 
+# --------------------------------------------------------------------------
+# Exported name (IMPORTANT to avoid polluting find_package calls)
+# --------------------------------------------------------------------------
+set_target_properties(semver PROPERTIES
+    EXPORT_NAME semver
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    POSITION_INDEPENDENT_CODE ON
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
+
+# --------------------------------------------------------------------------
+# Include dirs
+# --------------------------------------------------------------------------
 target_include_directories(semver
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-target_include_directories(semver
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private-include>
 )
 
+# --------------------------------------------------------------------------
+# Link options
+# --------------------------------------------------------------------------
 if(SEMVER_BUILD_SHARED)
     if(APPLE)
         target_link_options(semver PRIVATE -Wl,-undefined,error)
     elseif(UNIX)
         target_link_options(semver PRIVATE -Wl,--no-undefined)
     endif()
-endif()
-
-set_target_properties(semver PROPERTIES
-    VERSION                    ${PROJECT_VERSION}
-    SOVERSION                  ${PROJECT_VERSION_MAJOR}
-    POSITION_INDEPENDENT_CODE  ON
-    CXX_VISIBILITY_PRESET      hidden
-    VISIBILITY_INLINES_HIDDEN  ON
-)
-
-# On Windows, export all symbols for shared builds.
-if(SEMVER_BUILD_SHARED AND WIN32)
-    set_target_properties(semver PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 # --------------------------------------------------------------------------
@@ -118,14 +122,14 @@ include(CMakePackageConfigHelpers)
 # Install the header.
 install(
     FILES
-        include/semver/semver.hpp
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
+        include/dpetkov-semver/semver.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dpetkov-semver
 )
 
 # Install the target.
 install(
     TARGETS semver
-    EXPORT  semverTargets
+    EXPORT  dpetkov-semverTargets
     LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -134,28 +138,28 @@ install(
 
 # Export target file.
 install(
-    EXPORT      semverTargets
-    FILE        semverTargets.cmake
-    NAMESPACE   semver::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+    EXPORT      dpetkov-semverTargets
+    FILE        dpetkov-semverTargets.cmake
+    NAMESPACE   dpetkov-semver::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
 
 # Package config.
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/semverConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+    "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfigVersion.cmake"
     VERSION       ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 install(
     FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+        "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
