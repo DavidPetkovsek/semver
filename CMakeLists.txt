@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # --------------------------------------------------------------------------
 
 project(semver
-    VERSION   0.4.0
+    VERSION   0.4.1
     LANGUAGES CXX
     DESCRIPTION "C++20 Semantic Versioning Library — a faithful translation of python-semanticversion, with deprecated features removed."
 )
@@ -65,7 +65,7 @@ if(SEMVER_BUILD_SHARED)
 else()
     add_library(semver STATIC src/semver.cpp)
 endif()
-add_library(semver::semver ALIAS semver)
+add_library(dpetkov-semver::semver ALIAS semver)
 
 target_include_directories(semver
     PUBLIC
@@ -124,8 +124,8 @@ install(
 
 # Install the target.
 install(
-    TARGETS semver
-    EXPORT  semverTargets
+    TARGETS dpetkov-semver::semver
+    EXPORT  dpetkov-semverTargets
     LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -134,8 +134,8 @@ install(
 
 # Export target file.
 install(
-    EXPORT      semverTargets
-    FILE        semverTargets.cmake
+    EXPORT      dpetkov-semverTargets
+    FILE        dpetkov-semverTargets.cmake
     NAMESPACE   dpetkov-semver::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
@@ -144,7 +144,7 @@ install(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/semverConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
 
 write_basic_package_version_file(
@@ -157,5 +157,5 @@ install(
     FILES
         "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
