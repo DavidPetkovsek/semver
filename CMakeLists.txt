@@ -119,7 +119,7 @@ include(CMakePackageConfigHelpers)
 install(
     FILES
         include/semver/semver.hpp
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/semver
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dpetkov-semver
 )
 
 # Install the target.
@@ -136,26 +136,26 @@ install(
 install(
     EXPORT      semverTargets
     FILE        semverTargets.cmake
-    NAMESPACE   semver::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
+    NAMESPACE   dpetkov-semver::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dpetkov-semver
 )
 
 # Package config.
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/semverConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
 )
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfigVersion.cmake"
     VERSION       ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 install(
     FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/semverConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/semverConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/dpetkov-semverConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/semver
 )

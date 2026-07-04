@@ -1,7 +1,7 @@
 // semver.cpp — Implementation of semver.hpp
 // Copyright (c) 2025. BSD-2-Clause.
 
-#include "semver/semver.hpp"
+#include "dpetkov-semver/semver.hpp"
 #include "detail.hpp"
 
 #include <algorithm>
