@@ -24,7 +24,7 @@ add_executable(semver_tests
 
 target_link_libraries(semver_tests
     PRIVATE
-        semver::semver
+        dpetkov-semver::semver
         Catch2::Catch2WithMain
 )
 
