@@ -65,18 +65,35 @@ if(SEMVER_BUILD_SHARED)
 else()
     add_library(semver STATIC src/semver.cpp)
 endif()
+# Local alias (nice for internal use)
 add_library(dpetkov-semver::semver ALIAS semver)
 
+# --------------------------------------------------------------------------
+# Exported name (IMPORTANT to avoid polluting find_package calls)
+# --------------------------------------------------------------------------
+set_target_properties(semver PROPERTIES
+    EXPORT_NAME semver
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    POSITION_INDEPENDENT_CODE ON
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
+
+# --------------------------------------------------------------------------
+# Include dirs
+# --------------------------------------------------------------------------
 target_include_directories(semver
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-target_include_directories(semver
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private-include>
 )
 
+# --------------------------------------------------------------------------
+# Link options
+# --------------------------------------------------------------------------
 if(SEMVER_BUILD_SHARED)
     if(APPLE)
         target_link_options(semver PRIVATE -Wl,-undefined,error)
@@ -84,14 +101,6 @@ if(SEMVER_BUILD_SHARED)
         target_link_options(semver PRIVATE -Wl,--no-undefined)
     endif()
 endif()
-
-set_target_properties(semver PROPERTIES
-    VERSION                    ${PROJECT_VERSION}
-    SOVERSION                  ${PROJECT_VERSION_MAJOR}
-    POSITION_INDEPENDENT_CODE  ON
-    CXX_VISIBILITY_PRESET      hidden
-    VISIBILITY_INLINES_HIDDEN  ON
-)
 
 # On Windows, export all symbols for shared builds.
 if(SEMVER_BUILD_SHARED AND WIN32)
@@ -124,7 +133,7 @@ install(
 
 # Install the target.
 install(
-    TARGETS dpetkov-semver::semver
+    TARGETS semver
     EXPORT  dpetkov-semverTargets
     LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
