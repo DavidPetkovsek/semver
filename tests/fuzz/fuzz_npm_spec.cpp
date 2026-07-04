@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-#include "semver/semver.hpp"
+#include "dpetkov-semver/semver.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     if (size > 512) return 0;
